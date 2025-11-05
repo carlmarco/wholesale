@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Optional
 from math import radians, cos, sin, asin, sqrt
+from pyproj import Transformer
 
 
 class GeoPropertyEnricher:
@@ -33,24 +34,31 @@ class GeoPropertyEnricher:
             low_memory=False
         )
 
-        # Filter to records with valid coordinates
+        # Filter to records with non-zero coordinates
+        # Fixed bug: was filtering gpsx > 0, which excluded negative longitudes
         self.violations_df = self.violations_df[
-            (self.violations_df['gpsx'] > 0) &
-            (self.violations_df['gpsy'] > 0)
+            (self.violations_df['gpsx'] != 0) &
+            (self.violations_df['gpsy'] != 0) &
+            (self.violations_df['gpsx'].notna()) &
+            (self.violations_df['gpsy'].notna())
         ].copy()
 
         print(f"Loaded {len(self.violations_df):,} violation records with coordinates")
 
-        # Convert state plane coordinates to lat/lon if needed
-        # For now, check if gpsx/gpsy are already lat/lon
-        # Latitude range: 28-29 (Orlando), Longitude range: -81 to -82
-        if self.violations_df['gpsy'].mean() > 100:
-            print("Converting state plane coordinates to lat/lon...")
-            self._convert_coordinates()
-        else:
-            # Already in lat/lon format
-            self.violations_df['latitude'] = self.violations_df['gpsy']
-            self.violations_df['longitude'] = self.violations_df['gpsx']
+        # Determine coordinate system and convert if needed
+        # State Plane coordinates are large (500,000+)
+        # Lat/lon coordinates are small (28-29 lat, -81 to -82 lon)
+        if len(self.violations_df) > 0:
+            avg_y = abs(self.violations_df['gpsy'].mean())
+            if avg_y > 100:
+                print(f"Detected State Plane coordinates (avg_y={avg_y:.0f})")
+                print("Converting Florida State Plane (East Zone, EPSG:2881) to WGS84...")
+                self._convert_coordinates()
+            else:
+                print(f"Detected lat/lon coordinates (avg_y={avg_y:.2f})")
+                # Already in lat/lon format (gpsy=lat, gpsx=lon)
+                self.violations_df['latitude'] = self.violations_df['gpsy']
+                self.violations_df['longitude'] = self.violations_df['gpsx']
 
         self.radius_miles = radius_miles
         print(f"Using search radius: {radius_miles} miles (~{int(radius_miles*5280)} feet)")
@@ -59,12 +67,40 @@ class GeoPropertyEnricher:
         """
         Convert Florida State Plane coordinates to WGS84 lat/lon.
 
-        Note: This is a simplified conversion. For production, use pyproj library.
+        Uses pyproj to transform from EPSG:2881 (Florida East State Plane, US Survey Feet)
+        to EPSG:4326 (WGS84 latitude/longitude).
         """
-        # Placeholder - would use pyproj for accurate conversion
-        # For now, skip records without proper coordinates
-        self.violations_df['latitude'] = None
-        self.violations_df['longitude'] = None
+        # Create transformer from Florida State Plane East to WGS84
+        # EPSG:2881 = NAD83 / Florida East (ftUS)
+        # EPSG:4326 = WGS 84 (latitude, longitude)
+        transformer = Transformer.from_crs(
+            "EPSG:2881",  # Florida State Plane East Zone (US Survey Feet)
+            "EPSG:4326",  # WGS84 lat/lon
+            always_xy=True  # Ensure (x, y) order, not (lat, lon)
+        )
+
+        # Transform coordinates
+        # Note: gpsx = easting (x), gpsy = northing (y) in State Plane
+        lon, lat = transformer.transform(
+            self.violations_df['gpsx'].values,
+            self.violations_df['gpsy'].values
+        )
+
+        self.violations_df['longitude'] = lon
+        self.violations_df['latitude'] = lat
+
+        # Filter out any invalid conversions
+        valid_mask = (
+            (self.violations_df['latitude'].between(28, 29)) &
+            (self.violations_df['longitude'].between(-82, -81))
+        )
+
+        invalid_count = (~valid_mask).sum()
+        if invalid_count > 0:
+            print(f"Warning: {invalid_count} coordinates outside Orlando area (likely conversion errors)")
+            self.violations_df = self.violations_df[valid_mask].copy()
+
+        print(f"Successfully converted {len(self.violations_df):,} coordinates to WGS84")
 
     def haversine_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """
