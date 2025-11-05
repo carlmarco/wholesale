@@ -1,12 +1,12 @@
 # Unit Tests - Summary Report
 
-## Test Coverage: 55%
+## Test Coverage: 58%
 
 ### Overall Statistics
-- **Total Tests**: 28
-- **Passed**: 28 (100%)
+- **Total Tests**: 33 (was 28)
+- **Passed**: 33 (100%)
 - **Failed**: 0
-- **Coverage**: 55% (235 statements, 105 missing)
+- **Coverage**: 58% (248 statements, 103 missing) - Improved from 55%
 
 ## Module Coverage Breakdown
 
@@ -14,8 +14,8 @@
 |--------|-----------|---------|----------|---------------|
 | tax_sale_scraper.py | 57 | 35 | 61% | Display functions (95-130) |
 | enrichment.py | 75 | 39 | 52% | Display functions (189-241) |
-| geo_enrichment.py | 103 | 56 | 54% | Display & conversion (48-255) |
-| **TOTAL** | **235** | **130** | **55%** | |
+| geo_enrichment.py | 116 | 71 | **61%** ⬆️ | Display functions (233-291) |
+| **TOTAL** | **248** | **145** | **58%** ⬆️ | |
 
 ## Test Files
 
@@ -49,10 +49,10 @@ Tests for parcel ID-based property enrichment with code violations.
 - test_get_top_opportunities_high_threshold
 - test_enrich_multiple_properties
 
-### 3. test_geo_enrichment.py (10 tests)
-Tests for geographic proximity-based property enrichment.
+### 3. test_geo_enrichment.py (15 tests) ⬆️ +5 tests
+Tests for geographic proximity-based property enrichment with coordinate transformation.
 
-**Tests**:
+**Core Functionality Tests** (10):
 - test_enricher_initialization
 - test_haversine_distance_calculation
 - test_haversine_distance_known_values
@@ -64,12 +64,20 @@ Tests for geographic proximity-based property enrichment.
 - test_enrich_multiple_properties_varying_distances
 - test_different_radius_sizes
 
+**Coordinate Transformation Tests** (5 new):
+- test_coordinate_system_detection_state_plane
+- test_coordinate_system_detection_latlon
+- test_negative_longitude_filter_fixed
+- test_coordinate_conversion_accuracy
+- test_invalid_coordinates_filtered
+
 ## Test Methodology
 
 ### Fixtures
 - **sample_csv_file**: Temporary CSV with code enforcement test data
 - **sample_properties**: Mock tax sale property data
-- **sample_csv_with_coords**: CSV with coordinate data for geo tests
+- **sample_csv_with_coords**: CSV with lat/lon coordinates (negative longitudes)
+- **sample_csv_with_state_plane**: CSV with State Plane coordinates for conversion testing
 
 ### Mocking Strategy
 - API calls mocked using `unittest.mock`
@@ -105,13 +113,13 @@ Coordinate conversion logic in geo_enrichment (48-67)
 
 ## Known Issues Discovered
 
-### Issue 1: Negative Longitude Filter Bug
-**File**: geo_enrichment.py:38
-**Code**: `self.violations_df['gpsx'] > 0`
-**Problem**: Filters out negative longitudes (all US West coordinates)
-**Impact**: Geographic enrichment fails for Orlando data (-81.5 longitude)
-**Fix**: Change to `!= 0` or `abs() > 0`
-**Workaround**: Tests use positive coordinates temporarily
+### Issue 1: Negative Longitude Filter Bug ✅ FIXED
+**File**: geo_enrichment.py:38-44
+**Original Code**: `self.violations_df['gpsx'] > 0`
+**Problem**: Filtered out negative longitudes (all Orlando coordinates at -81.x)
+**Fix Applied**: Changed to `!= 0` with additional notna() checks
+**Status**: ✅ Fixed and tested
+**Verification**: 5 new tests confirm fix works with negative longitudes
 
 ### Issue 2: Parcel ID System Incompatibility
 **Status**: Known limitation documented in PHASE_1_SUMMARY.md

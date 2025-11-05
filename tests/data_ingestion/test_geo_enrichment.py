@@ -14,15 +14,34 @@ from src.data_ingestion.geo_enrichment import GeoPropertyEnricher
 
 
 @pytest.fixture
-def sample_csv_with_coords():
-    """Create a temporary CSV file with coordinate data"""
-    # Note: Using positive values because geo_enrichment filters gpsx > 0
-    # This is a known bug - should filter for != 0, not > 0
-    # For testing, we use abs(longitude) to pass the filter
+def sample_csv_with_state_plane():
+    """Create a temporary CSV file with State Plane coordinates"""
+    # Florida State Plane East coordinates (large values)
+    # These should trigger coordinate conversion
     data = """apno,caseinfostatus,gpsx,gpsy,case_type,casedt
-2025-001,Open,81.5,28.5,Lot,2025-01-15
-2025-002,Closed,81.50001,28.50001,Housing,2025-01-10
-2025-003,Open,81.6,28.6,Sign,2025-02-01
+2025-001,Open,511279,1524452,Lot,2025-01-15
+2025-002,Closed,534679,1542276,Housing,2025-01-10
+2025-003,Open,501552,1520974,Sign,2025-02-01
+2025-004,Closed,0,0,Lot,2025-01-01
+"""
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
+        f.write(data)
+        temp_path = f.name
+
+    yield temp_path
+
+    os.unlink(temp_path)
+
+
+@pytest.fixture
+def sample_csv_with_coords():
+    """Create a temporary CSV file with coordinate data (lat/lon format)"""
+    # Using negative longitudes (Orlando is at -81.x)
+    # Small values (<100) will be detected as lat/lon, not State Plane
+    data = """apno,caseinfostatus,gpsx,gpsy,case_type,casedt
+2025-001,Open,-81.5,28.5,Lot,2025-01-15
+2025-002,Closed,-81.50001,28.50001,Housing,2025-01-10
+2025-003,Open,-81.6,28.6,Sign,2025-02-01
 2025-004,Closed,0,0,Lot,2025-01-01
 """
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
@@ -88,7 +107,7 @@ class TestGeoPropertyEnricher:
                 'deed_status': 'Active Sale',
                 'parcel_id': '29-22-28-8850-02-050',
                 'latitude': 28.5,
-                'longitude': 81.5  # Positive to match test data
+                'longitude': -81.5  # Negative longitude (Orlando)
             }
         ]
 
@@ -97,7 +116,7 @@ class TestGeoPropertyEnricher:
         assert len(enriched) == 1
         prop = enriched[0]
 
-        # Should find 2 nearby violations (both at ~81.5, 28.5)
+        # Should find 2 nearby violations (both at ~-81.5, 28.5)
         assert prop['nearby_violations'] >= 1
         assert 'nearest_violation_distance' in prop
         assert 'violation_types_nearby' in prop
@@ -234,3 +253,71 @@ class TestGeoPropertyEnricher:
 
         # Larger radius should find more or equal violations
         assert enriched_large[0]['nearby_violations'] >= enriched_small[0]['nearby_violations']
+
+    def test_coordinate_system_detection_state_plane(self, sample_csv_with_state_plane):
+        """Test that State Plane coordinates are detected and converted"""
+        enricher = GeoPropertyEnricher(sample_csv_with_state_plane, radius_miles=0.1)
+
+        # Should have converted coordinates
+        assert 'latitude' in enricher.violations_df.columns
+        assert 'longitude' in enricher.violations_df.columns
+
+        # Should have 3 valid records (0,0 filtered out)
+        assert len(enricher.violations_df) == 3
+
+        # Check that coordinates are in valid Orlando range
+        lats = enricher.violations_df['latitude']
+        lons = enricher.violations_df['longitude']
+
+        assert all(28 <= lat <= 29 for lat in lats)
+        assert all(-82 <= lon <= -81 for lon in lons)
+
+    def test_coordinate_system_detection_latlon(self, sample_csv_with_coords):
+        """Test that lat/lon coordinates are detected (no conversion)"""
+        enricher = GeoPropertyEnricher(sample_csv_with_coords, radius_miles=0.1)
+
+        # Should have latitude/longitude columns
+        assert 'latitude' in enricher.violations_df.columns
+        assert 'longitude' in enricher.violations_df.columns
+
+        # Should have 3 valid records (0,0 filtered out)
+        assert len(enricher.violations_df) == 3
+
+        # Coordinates should match input (no conversion)
+        assert enricher.violations_df['latitude'].iloc[0] == 28.5
+        assert enricher.violations_df['longitude'].iloc[0] == -81.5
+
+    def test_negative_longitude_filter_fixed(self, sample_csv_with_coords):
+        """Test that negative longitudes are no longer filtered out"""
+        enricher = GeoPropertyEnricher(sample_csv_with_coords, radius_miles=0.1)
+
+        # Should have records with negative longitudes
+        assert len(enricher.violations_df) > 0
+
+        # All non-zero longitudes should be negative (Orlando)
+        negative_lons = enricher.violations_df[enricher.violations_df['longitude'] != 0]['longitude']
+        assert all(lon < 0 for lon in negative_lons)
+
+    def test_coordinate_conversion_accuracy(self, sample_csv_with_state_plane):
+        """Test that State Plane conversion produces accurate results"""
+        enricher = GeoPropertyEnricher(sample_csv_with_state_plane, radius_miles=0.1)
+
+        # First coordinate: (511279, 1524452) should convert to approximately (28.527, -81.451)
+        first_lat = enricher.violations_df['latitude'].iloc[0]
+        first_lon = enricher.violations_df['longitude'].iloc[0]
+
+        # Check within reasonable tolerance (0.01 degrees ~ 0.7 miles)
+        assert 28.52 < first_lat < 28.54
+        assert -81.46 < first_lon < -81.44
+
+    def test_invalid_coordinates_filtered(self, sample_csv_with_coords):
+        """Test that (0, 0) coordinates are filtered out"""
+        enricher = GeoPropertyEnricher(sample_csv_with_coords, radius_miles=0.1)
+
+        # Should have filtered out the (0, 0) record
+        # Original has 4 records, one with (0,0)
+        assert len(enricher.violations_df) == 3
+
+        # No coordinates should be exactly (0, 0)
+        for _, row in enricher.violations_df.iterrows():
+            assert not (row['latitude'] == 0 and row['longitude'] == 0)
