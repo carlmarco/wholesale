@@ -1,6 +1,6 @@
 # Real Estate Wholesaler - Automated Property Analysis System
 
-Production-grade automated real estate wholesaling system that identifies undervalued properties using ML models and public data sources.
+Production-grade automated real estate wholesaling system for identifying undervalued investment opportunities in Orlando, FL using public data sources and distress signal analysis.
 
 ## Project Goal
 
@@ -11,42 +11,106 @@ ARV * 0.7 - repair_costs - acquisition_cost > $15,000 profit
 
 ## Current Status
 
-**Phase 1: Data Acquisition** - IN PROGRESS
+**Phase 1: COMPLETE** - Foundation & Core Pipeline
 
-- Tax sale property scraper (ArcGIS API) - COMPLETE
-- Code enforcement violation data - COMPLETE
-- Data enrichment pipeline - COMPLETE (with known issues)
-- AWS infrastructure - PENDING
-- Coordinate transformation - PENDING
-
-See [PHASE_1_SUMMARY.md](PHASE_1_SUMMARY.md) for detailed status.
+- ✅ Tax sale property scraper (ArcGIS API)
+- ✅ Foreclosure data scraper (ArcGIS API)
+- ✅ Property records scraper (Property Appraiser API)
+- ✅ Code enforcement violation data (Socrata API)
+- ✅ Geographic enrichment with coordinate transformation
+- ✅ Address standardization
+- ✅ Data deduplication pipeline
+- ✅ Lead scoring algorithm
+- ✅ Comprehensive unit tests (115 passing)
+- ✅ Structured logging with structlog
+- ✅ Configuration management with Pydantic
 
 ## Data Sources
 
 1. **Tax Sale Properties**: Orange County ArcGIS REST API
-   - 86 properties currently available
-   - Sale date: 12/18/2025
-   - Fields: TDA number, parcel ID, deed status, coordinates
+   - 86 properties with TDA numbers, sale dates, parcel IDs, coordinates
 
-2. **Code Enforcement Violations**: City of Orlando Socrata API
-   - 50,000 violation records
-   - 76% have parcel IDs
-   - 81% have coordinates (State Plane format)
+2. **Foreclosures**: Orange County Public MapServer Layer 44
+   - Active foreclosures with borrower names, default amounts, auction dates
 
-## Project Structure
+3. **Property Records**: Orange County Property Appraiser Layer 216
+   - 700K+ parcels with market values, assessed values, taxes, living area
+
+4. **Code Enforcement Violations**: City of Orlando Socrata API
+   - 40K+ violations with State Plane coordinates (converted to WGS84)
+   - 99.3% successful coordinate transformation rate
+
+## Architecture
+
+### Project Structure
 
 ```
 wholesaler/
+├── config/
+│   ├── settings.py              # Pydantic configuration management
+│   └── __init__.py
 ├── src/
-│   └── data_ingestion/
-│       ├── tax_sale_scraper.py      # Fetch tax sale properties
-│       ├── enrichment.py            # Parcel ID-based enrichment
-│       ├── geo_enrichment.py        # Geographic proximity enrichment
-│       └── pipeline.py              # Integrated workflow
-├── data/                            # Data files (gitignored)
-├── requirements.txt                 # Python dependencies
-├── PHASE_1_SUMMARY.md              # Detailed phase 1 report
-└── README.md                        # This file
+│   ├── wholesaler/              # New modular architecture
+│   │   ├── scrapers/            # Data ingestion from APIs
+│   │   │   ├── tax_sale_scraper.py
+│   │   │   ├── foreclosure_scraper.py
+│   │   │   └── property_scraper.py
+│   │   ├── enrichers/           # Data enrichment
+│   │   │   └── geo_enricher.py  # Geographic proximity matching
+│   │   ├── transformers/        # Data transformation
+│   │   │   ├── coordinate_transformer.py  # State Plane → WGS84
+│   │   │   └── address_standardizer.py    # Address normalization
+│   │   ├── models/              # Pydantic data models
+│   │   │   ├── property.py      # TaxSaleProperty, EnrichedProperty
+│   │   │   ├── foreclosure.py   # ForeclosureProperty
+│   │   │   └── property_record.py  # PropertyRecord
+│   │   ├── pipelines/           # Data pipelines
+│   │   │   ├── deduplication.py    # Merge by parcel ID
+│   │   │   └── lead_scoring.py     # Score investment opportunities
+│   │   └── utils/               # Shared utilities
+│   │       ├── logger.py        # Structured logging
+│   │       ├── geo_utils.py     # Distance calculations
+│   │       └── adapters.py      # Backward compatibility
+│   └── data_ingestion/          # Legacy code (maintained for compatibility)
+├── tests/                       # 115 unit tests
+│   ├── wholesaler/              # Tests for new architecture
+│   └── data_ingestion/          # Tests for legacy code
+├── data/                        # Data files (gitignored)
+├── .env                         # Environment variables (gitignored)
+├── .env.example                 # Template for configuration
+├── requirements.txt             # Python dependencies
+├── pytest.ini                   # Test configuration
+└── README.md                    # This file
+```
+
+### Data Pipeline Flow
+
+```
+1. Data Ingestion (Scrapers)
+   ├── Tax Sales (86 properties)
+   ├── Foreclosures (active lis pendens)
+   ├── Property Records (valuations, taxes)
+   └── Code Violations (40K+ records)
+          ↓
+2. Coordinate Transformation
+   └── State Plane (EPSG:2881) → WGS84 (EPSG:4326)
+          ↓
+3. Geographic Enrichment
+   └── Find violations within 0.25 mile radius
+          ↓
+4. Address Standardization
+   └── Normalize addresses, parcel IDs
+          ↓
+5. Data Deduplication
+   └── Merge sources by normalized parcel ID
+          ↓
+6. Lead Scoring (0-100, Tiers A/B/C/D)
+   ├── Distress Score (35%): tax sale, foreclosure, violations
+   ├── Value Score (30%): equity, market value, tax burden
+   ├── Location Score (20%): neighborhood condition
+   └── Urgency Score (15%): auction dates, timelines
+          ↓
+7. Ranked Investment Opportunities
 ```
 
 ## Setup
@@ -69,11 +133,13 @@ pip install -r requirements.txt
 
 ### Configuration
 
-Create `data/work.py` with API credentials:
-```python
-API_SECRET = "your_socrata_secret"
-API_KEY = "your_socrata_key"
-APP_TOKEN = "your_socrata_app_token"
+1. Copy `.env.example` to `.env`
+2. Add your Socrata API credentials:
+
+```bash
+SOCRATA_API_KEY=your_key_here
+SOCRATA_API_SECRET=your_secret_here
+SOCRATA_APP_TOKEN=your_token_here
 ```
 
 ## Usage
@@ -81,84 +147,195 @@ APP_TOKEN = "your_socrata_app_token"
 ### Fetch Tax Sale Properties
 
 ```python
-from src.data_ingestion.tax_sale_scraper import TaxSaleScraper
+from src.wholesaler.scrapers.tax_sale_scraper import TaxSaleScraper
 
 scraper = TaxSaleScraper()
 properties = scraper.fetch_properties(limit=10)
 scraper.display_properties(properties)
 ```
 
-### Run Enrichment Pipeline
+### Fetch Foreclosures
 
 ```python
-# Note: Currently blocked by coordinate transformation issue
-# See PHASE_1_SUMMARY.md for details
+from src.wholesaler.scrapers.foreclosure_scraper import ForeclosureScraper
 
-from src.data_ingestion.pipeline import main
-main()
+scraper = ForeclosureScraper()
+foreclosures = scraper.fetch_foreclosures(limit=10)
+scraper.display_foreclosures(foreclosures)
 ```
 
-## Known Issues
+### Fetch Property Records by Parcel
 
-1. **Parcel ID Mismatch**: Tax sale and code enforcement use different parcel ID systems (0 matches found)
-2. **Coordinate System**: Code enforcement data uses Florida State Plane (EPSG:2881), needs conversion to WGS84
-3. **No Geographic Enrichment**: Blocked by coordinate conversion requirement
+```python
+from src.wholesaler.scrapers.property_scraper import PropertyScraper
 
-See [PHASE_1_SUMMARY.md](PHASE_1_SUMMARY.md) for detailed analysis.
+scraper = PropertyScraper()
+property = scraper.fetch_by_parcel("123456789012345")
+```
+
+### Geographic Enrichment
+
+```python
+from src.wholesaler.enrichers.geo_enricher import GeoPropertyEnricher
+
+enricher = GeoPropertyEnricher('data/code_enforcement_data.csv', radius_miles=0.25)
+enriched_properties = enricher.enrich_properties(tax_sale_properties)
+enricher.display_summary_stats(enriched_properties)
+```
+
+### Lead Scoring
+
+```python
+from src.wholesaler.pipelines.deduplication import PropertyDeduplicator
+from src.wholesaler.pipelines.lead_scoring import LeadScorer
+
+# Merge data sources
+deduplicator = PropertyDeduplicator()
+merged = deduplicator.merge_sources(
+    tax_sales=tax_sales,
+    foreclosures=foreclosures,
+    property_records=property_records
+)
+
+# Score leads
+scorer = LeadScorer()
+scored_leads = [(prop, scorer.score_lead(prop)) for prop in merged]
+ranked_leads = scorer.rank_leads(scored_leads)
+
+# Top tier A leads
+tier_a_leads = [lead for lead in ranked_leads if lead[1].tier == "A"]
+```
+
+## Testing
+
+```bash
+# Run all unit tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=src --cov-report=term-missing
+
+# Run specific module tests
+pytest tests/wholesaler/scrapers/test_foreclosure_scraper.py -v
+
+# Skip integration tests (require internet)
+pytest tests/ -v -m "not integration"
+```
+
+**Test Results:**
+- 115 unit tests
+- 0 failures
+- 58% code coverage (focus on business logic)
+
+## Lead Scoring Algorithm
+
+### Components (Weighted)
+
+1. **Distress Score (35%)**
+   - Tax sale status: +40 points
+   - Foreclosure status: +40 points
+   - Code violations nearby: up to +20 points
+   - Open violations: +3 points
+
+2. **Value Score (30%)**
+   - High equity (>200%): +40 points
+   - Target price range ($100K-$400K): +30 points
+   - Low tax burden: +15 points
+   - Good size: +15 points
+
+3. **Location Score (20%)**
+   - Clean neighborhood: +30 points
+   - Violation density: ±20 points
+   - Proximity to issues: ±10 points
+
+4. **Urgency Score (15%)**
+   - Foreclosure auction scheduled: +50 points
+   - Tax sale date set: +40 points
+   - Open violations: +10 points
+
+### Tier System
+
+- **Tier A (75-100):** Hot leads requiring immediate action
+- **Tier B (60-74):** Good leads, high priority
+- **Tier C (40-59):** Moderate leads, review
+- **Tier D (0-39):** Low priority, passive monitoring
+
+## Technical Stack
+
+**Core:**
+- Python 3.13
+- Pydantic 2.10.4 (data validation)
+- Pydantic-settings 2.7.1 (configuration)
+- Structlog 25.1.0 (logging)
+
+**Data Processing:**
+- pandas 2.3.3
+- numpy 2.3.4
+- pyproj 3.7.2 (coordinate transformation)
+
+**APIs & Scraping:**
+- requests 2.32.5
+- sodapy 2.2.0
+
+**Testing:**
+- pytest 8.4.2
+- pytest-cov 7.0.0
+
+## Development Principles
+
+- Incremental development with testing after each change
+- No file > 100 lines without testing
+- Production-ready code from day 1
+- Structured logging throughout
+- Type-safe models with Pydantic
+- Comprehensive documentation
+- Configuration via environment variables
 
 ## Roadmap
 
-### Phase 1: Data Acquisition (Current)
-- [x] Data source selection
-- [x] Production scraper
-- [x] Enrichment logic
-- [ ] Coordinate transformation
-- [ ] Unit tests
-- [ ] AWS deployment (S3, RDS)
-
-### Phase 2: ETL Pipeline
+### Phase 2: ETL Pipeline & Persistence
+- [ ] Database schema design (PostgreSQL)
+- [ ] SQLAlchemy ORM models
+- [ ] Data persistence layer
 - [ ] Airflow orchestration
-- [ ] Data quality (Great Expectations)
-- [ ] Data versioning (DVC)
+- [ ] Scheduled job execution
 
-### Phase 3: ML Models
-- [ ] Property valuation (regression)
-- [ ] Deal scoring (classification)
-- [ ] MLflow tracking
-- [ ] Backtesting framework
+### Phase 3: Advanced Features
+- [ ] Property valuation ML model
+- [ ] Repair cost estimation
+- [ ] Comp analysis integration
+- [ ] ARV calculations
+- [ ] ROI projections
 
 ### Phase 4: API & Serving
 - [ ] FastAPI endpoints
 - [ ] Redis caching
-- [ ] Load testing
+- [ ] Authentication/authorization
+- [ ] Rate limiting
 
-### Phase 5: Automation & Monitoring
-- [ ] CloudWatch metrics
-- [ ] Model drift detection
-- [ ] Cost tracking
-
-### Phase 6: Frontend
+### Phase 5: Frontend & Monitoring
 - [ ] Streamlit dashboard
+- [ ] CloudWatch metrics
+- [ ] Alert system for Tier A leads
+- [ ] Performance monitoring
 
-## Technical Stack
+### Phase 6: AWS Deployment
+- [ ] RDS for database
+- [ ] S3 for data storage
+- [ ] EC2/Lambda for compute
+- [ ] CloudWatch logging
 
-- **Language**: Python 3.13
-- **Data**: pandas, numpy
-- **APIs**: requests, sodapy
-- **Cloud**: AWS (S3, RDS, EC2, CloudWatch)
-- **Orchestration**: Airflow
-- **ML**: scikit-learn, MLflow
-- **API**: FastAPI
-- **Testing**: pytest
-- **CI/CD**: GitHub Actions
+## Key Features
 
-## Development Principles
-
-- Incremental development (test after every change)
-- No file > 100 lines without testing
-- Production-ready code from day 1
-- Comprehensive documentation
-- Professional error handling
+✅ **Multi-source data integration** from 4 different APIs
+✅ **Coordinate transformation** from State Plane to WGS84
+✅ **Geographic proximity matching** with Haversine distance
+✅ **Address standardization** across all data sources
+✅ **Smart deduplication** by normalized parcel ID
+✅ **Lead scoring algorithm** with 4-component weighting
+✅ **Production logging** with structured JSON output
+✅ **Type-safe models** with Pydantic validation
+✅ **Comprehensive testing** with 115 unit tests
 
 ## License
 

@@ -20,3 +20,7 @@ six==1.17.0
 sodapy==2.2.0
 tzdata==2025.2
 urllib3==2.5.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+structlog==25.1.0
+python-dotenv==1.0.1
