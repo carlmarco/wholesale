@@ -13,6 +13,7 @@ from src.wholesaler.db.session import (
     close_connections,
     create_all_tables,
     drop_all_tables,
+    with_retry,
 )
 from src.wholesaler.db.models import (
     Property,
@@ -24,6 +25,16 @@ from src.wholesaler.db.models import (
     LeadScoreHistory,
     DataIngestionRun,
 )
+from src.wholesaler.db.repository import (
+    BaseRepository,
+    PropertyRepository,
+    TaxSaleRepository,
+    ForeclosureRepository,
+    PropertyRecordRepository,
+    LeadScoreRepository,
+    DataIngestionRunRepository,
+)
+from src.wholesaler.db import utils as db_utils
 
 __all__ = [
     # Base
@@ -37,6 +48,7 @@ __all__ = [
     "close_connections",
     "create_all_tables",
     "drop_all_tables",
+    "with_retry",
     # Models
     "Property",
     "TaxSale",
@@ -46,4 +58,14 @@ __all__ = [
     "LeadScore",
     "LeadScoreHistory",
     "DataIngestionRun",
+    # Repositories
+    "BaseRepository",
+    "PropertyRepository",
+    "TaxSaleRepository",
+    "ForeclosureRepository",
+    "PropertyRecordRepository",
+    "LeadScoreRepository",
+    "DataIngestionRunRepository",
+    # Utilities
+    "db_utils",
 ]

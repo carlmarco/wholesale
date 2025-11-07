@@ -400,3 +400,5 @@ WHERE p.parcel_id_normalized = '123456789012345';
 2. Migrate existing in-memory data to database
 3. Implement incremental updates (not full scrape)
 4. Add partitioning and materialized views after data volume grows
+
+---
