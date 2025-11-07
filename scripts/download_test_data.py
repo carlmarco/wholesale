@@ -38,7 +38,7 @@ def main():
     # Download foreclosures
     logger.info("Fetching foreclosure properties...")
     foreclosure_scraper = ForeclosureScraper()
-    foreclosures = foreclosure_scraper.fetch_properties(limit=20)
+    foreclosures = foreclosure_scraper.fetch_foreclosures(limit=20)
     logger.info(f"Downloaded {len(foreclosures)} foreclosure properties")
 
     # Save to JSON files

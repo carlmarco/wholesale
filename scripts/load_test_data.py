@@ -11,9 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.wholesaler.scrapers.tax_sale_scraper import TaxSaleScraper
-from src.wholesaler.scrapers.foreclosure_scraper import ForeclosureScr
-
-aper
+from src.wholesaler.scrapers.foreclosure_scraper import ForeclosureScraper
 from src.wholesaler.etl.loaders import TaxSaleLoader, ForeclosureLoader
 from src.wholesaler.db.session import get_db_session
 from src.wholesaler.utils.logger import get_logger
@@ -32,7 +30,7 @@ def main():
     logger.info(f"Fetched {len(tax_sales)} tax sale properties")
 
     foreclosure_scraper = ForeclosureScraper()
-    foreclosures = foreclosure_scraper.fetch_properties(limit=20)
+    foreclosures = foreclosure_scraper.fetch_foreclosures(limit=20)
     logger.info(f"Fetched {len(foreclosures)} foreclosure properties")
 
     # Load into database

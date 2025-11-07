@@ -7,7 +7,7 @@ from typing import Generator
 from sqlalchemy.orm import Session
 
 from src.wholesaler.db.session import SessionLocal
-from src.wholesaler.config import settings
+from config.settings import settings
 
 
 def get_db() -> Generator[Session, None, None]:

@@ -124,7 +124,7 @@ class Property(Base, TimestampMixin, SoftDeleteMixin):
             name="check_longitude_range"
         ),
         Index("idx_properties_situs_address", "situs_address"),
-        Index("idx_properties_coordinates", "coordinates", postgresql_using="gist"),
+        # Note: GeoAlchemy2 Geography type automatically creates GIST index
     )
 
     def __repr__(self) -> str:
@@ -431,7 +431,7 @@ class CodeViolation(Base, TimestampMixin, DataSourceMixin):
     # Indexes
     __table_args__ = (
         Index("idx_code_violations_parcel_id", "parcel_id_normalized"),
-        Index("idx_code_violations_coordinates", "coordinates", postgresql_using="gist"),
+        # Note: GeoAlchemy2 Geography type automatically creates GIST index for coordinates
         Index("idx_code_violations_status", "status"),
         Index("idx_code_violations_opened_date", "opened_date"),
     )
@@ -657,7 +657,7 @@ class DataIngestionRun(Base, TimestampMixin):
     # Constraints and indexes
     __table_args__ = (
         CheckConstraint(
-            "status IN ('success', 'failure', 'partial')",
+            "status IN ('running', 'success', 'failure', 'partial')",
             name="check_status_valid"
         ),
         Index("idx_data_ingestion_runs_source_type", "source_type"),

@@ -10,6 +10,14 @@ Provides machine learning models and rule-based heuristics for:
 from typing import Dict, Optional, List
 from dataclasses import dataclass
 import numpy as np
+import joblib
+from pathlib import Path
+from functools import lru_cache
+
+from config.settings import settings
+from src.wholesaler.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -44,21 +52,100 @@ class DealAnalysis:
     recommendation: str  # "strong_buy", "buy", "hold", "pass"
 
 
+@lru_cache()
+def _load_artifact(filename: str):
+    """Generic artifact loader with caching."""
+    model_path = Path(settings.ml_models_dir) / filename
+    if not model_path.exists():
+        logger.warning("ml_model_missing", path=str(model_path))
+        return None
+    try:
+        artifact = joblib.load(model_path)
+        logger.info("ml_model_loaded", path=str(model_path))
+        return artifact
+    except Exception as exc:
+        logger.error("ml_model_load_failed", path=str(model_path), error=str(exc))
+        return None
+
+
+@lru_cache()
+def _load_arv_model():
+    """Load trained ARV model artifact if available."""
+    return _load_artifact(settings.arv_model_filename)
+
+
+@lru_cache()
+def _load_lead_model():
+    """Load lead qualification model artifact if available."""
+    return _load_artifact(settings.lead_model_filename)
+
+
+def _predict_arv_ml(features: PropertyFeatures) -> Optional[Dict[str, float]]:
+    """Predict ARV using trained model if available."""
+    artifact = _load_arv_model()
+    if not artifact:
+        return None
+
+    model = artifact.get("model")
+    feature_names = artifact.get("features", [])
+
+    if not model or not feature_names:
+        return None
+
+    # Build feature vector with safe defaults
+    feature_vector = []
+    feature_map = {
+        "total_score": features.total_score,
+        "distress_score": features.distress_score,
+        "value_score": features.value_score,
+        "location_score": features.location_score,
+        "has_tax_sale": 1.0 if features.has_tax_sale else 0.0,
+        "has_foreclosure": 1.0 if features.has_foreclosure else 0.0,
+        "tax_sale_opening_bid": features.tax_sale_opening_bid or 0.0,
+        "foreclosure_judgment": features.foreclosure_judgment or 0.0,
+    }
+
+    for name in feature_names:
+        feature_vector.append(feature_map.get(name, 0.0))
+
+    try:
+        prediction = model.predict([feature_vector])[0]
+    except Exception as exc:
+        logger.error("arv_prediction_failed", error=str(exc))
+        return None
+
+    confidence_range = prediction * 0.10
+    return {
+        "estimated_arv": round(float(prediction), 2),
+        "arv_low": round(float(prediction - confidence_range), 2),
+        "arv_high": round(float(prediction + confidence_range), 2),
+        "confidence": 0.9,
+    }
+
+
 def estimate_arv(features: PropertyFeatures) -> Dict[str, float]:
     """
-    Estimate After Repair Value (ARV) using rule-based heuristics.
+    Estimate After Repair Value (ARV) using ML model with heuristic fallback.
 
-    In production, this would use trained ML models with historical sales data.
-    For now, we use heuristics based on property characteristics.
+    Attempts to use trained ML model first, then falls back to rule-based
+    heuristics if the model is unavailable.
 
     Args:
         features: Property features
 
     Returns:
-        Dictionary with ARV estimate and confidence bounds
+        Dictionary with ARV estimate, confidence bounds, and prediction method
     """
-    # Base ARV estimation using location and property characteristics
-    # These are example values - in production, use real market data
+    ml_result = _predict_arv_ml(features)
+    if ml_result:
+        ml_result["prediction_method"] = "ml_model"
+        logger.debug("arv_prediction_using_ml_model", parcel_id=features.parcel_id)
+        return ml_result
+
+    # Fallback to heuristic estimation when ML model unavailable
+    logger.info("arv_prediction_fallback_to_heuristic",
+                parcel_id=features.parcel_id,
+                reason="ml_model_unavailable")
 
     # City-based base values (Florida markets)
     city_base_values = {
@@ -99,6 +186,7 @@ def estimate_arv(features: PropertyFeatures) -> Dict[str, float]:
         "arv_low": round(estimated_arv - confidence_range, 2),
         "arv_high": round(estimated_arv + confidence_range, 2),
         "confidence": 0.85 if features.location_score > 70 else 0.70,
+        "prediction_method": "heuristic_fallback",
     }
 
 
@@ -310,3 +398,54 @@ def get_deal_analysis(features: PropertyFeatures) -> DealAnalysis:
         opportunity_factors=opportunity_factors,
         recommendation=recommendation,
     )
+def predict_lead_probability(features: PropertyFeatures) -> Optional[float]:
+    """
+    Predict probability of lead being Tier A using trained ML model.
+
+    Returns None if model unavailable (falls back to heuristic scoring only).
+
+    Args:
+        features: Property features
+
+    Returns:
+        Probability (0-1) of lead being Tier A, or None if model unavailable
+    """
+    artifact = _load_lead_model()
+    if not artifact:
+        logger.debug("lead_prediction_fallback_to_heuristic",
+                    parcel_id=features.parcel_id,
+                    reason="ml_model_unavailable")
+        return None
+
+    model = artifact.get("model")
+    feature_names = artifact.get("features", [])
+
+    if not model or not feature_names:
+        logger.warning("lead_model_artifact_incomplete",
+                      parcel_id=features.parcel_id)
+        return None
+
+    feature_map = {
+        "total_score": features.total_score,
+        "distress_score": features.distress_score,
+        "value_score": features.value_score,
+        "location_score": features.location_score,
+        "has_tax_sale": 1.0 if features.has_tax_sale else 0.0,
+        "has_foreclosure": 1.0 if features.has_foreclosure else 0.0,
+        "tax_sale_opening_bid": features.tax_sale_opening_bid or 0.0,
+        "foreclosure_judgment": features.foreclosure_judgment or 0.0,
+    }
+
+    vector = [feature_map.get(name, 0.0) for name in feature_names]
+
+    try:
+        proba = model.predict_proba([vector])[0][1]
+        logger.debug("lead_prediction_using_ml_model",
+                    parcel_id=features.parcel_id,
+                    probability=float(proba))
+        return float(proba)
+    except Exception as exc:
+        logger.error("lead_prediction_failed",
+                    parcel_id=features.parcel_id,
+                    error=str(exc))
+        return None

@@ -59,8 +59,7 @@ def get_dashboard_stats(
 
     # Total properties
     total_properties = (
-        db.query(func.count(Property.id))
-        .filter(Property.is_active == True)
+        db.query(func.count(Property.parcel_id_normalized))
         .scalar() or 0
     )
 

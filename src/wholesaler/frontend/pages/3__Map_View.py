@@ -3,6 +3,10 @@ Map View Page
 
 Interactive map visualization of leads with tier-based color coding.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
+
 import streamlit as st
 import pandas as pd
 import pydeck as pdk

@@ -80,23 +80,50 @@ def send_email_notification(
         logger.warning("alert_email_not_configured")
         return False
 
+    # Check SMTP configuration
+    if not all([settings.smtp_host, settings.smtp_user, settings.smtp_password, settings.smtp_from_email]):
+        logger.warning("smtp_not_configured",
+                      message="SMTP credentials missing - check SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_FROM_EMAIL in .env")
+        return False
+
     try:
-        # Note: In production, use SMTP server credentials from settings
-        # For now, just log the notification
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = settings.smtp_from_email
+        msg['To'] = to_email
+
+        # Attach body (plain text or HTML)
+        if html:
+            msg.attach(MIMEText(body, 'html'))
+        else:
+            msg.attach(MIMEText(body, 'plain'))
+
+        # Send email via SMTP
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+            if settings.smtp_use_tls:
+                server.starttls()
+
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(msg)
+
         logger.info("email_notification_sent",
                     to=to_email,
                     subject=subject,
                     body_preview=body[:100])
-
-        # TODO: Implement actual email sending with SMTP
-        # msg = MIMEMultipart('alternative')
-        # msg['Subject'] = subject
-        # msg['From'] = settings.smtp_from_email
-        # msg['To'] = to_email
-        # ...
-
         return True
 
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error("smtp_authentication_failed",
+                    error=str(e),
+                    hint="Check SMTP_USER and SMTP_PASSWORD in .env")
+        return False
+    except smtplib.SMTPException as e:
+        logger.error("smtp_error",
+                    error=str(e),
+                    to=to_email,
+                    subject=subject)
+        return False
     except Exception as e:
         logger.error("email_notification_error", error=str(e))
         return False

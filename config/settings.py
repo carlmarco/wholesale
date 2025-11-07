@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     socrata_api_key: Optional[str] = None
     socrata_api_secret: Optional[str] = None
     socrata_app_token: Optional[str] = None
+    socrata_domain: str = "data.cityoforlando.net"
+    socrata_code_violations_dataset: str = "k6e8-nw6w"
 
     # ArcGIS API settings
     arcgis_base_url: str = "https://services1.arcgis.com/0U8EQ1FrumPeIqDb/arcgis/rest/services/Tax_Sale_Data/FeatureServer/0/query"
@@ -68,6 +70,14 @@ class Settings(BaseSettings):
     alert_enable_email: bool = False
     alert_enable_slack: bool = False
 
+    # SMTP settings for email alerts
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_from_email: Optional[str] = None
+    smtp_use_tls: bool = True
+
     # Logging settings
     log_level: str = "INFO"
     log_format: str = "json"
@@ -75,6 +85,11 @@ class Settings(BaseSettings):
     # Application settings
     environment: str = "development"
     debug: bool = False
+
+    # ML settings
+    ml_models_dir: str = "models"
+    arv_model_filename: str = "arv_model.joblib"
+    lead_model_filename: str = "lead_model.joblib"
 
 
 # Singleton instance

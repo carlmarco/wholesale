@@ -3,6 +3,10 @@ Deal Analyzer Page
 
 ML-powered deal analysis with ARV estimation, repair costs, and ROI calculator.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
+
 import streamlit as st
 
 from src.wholesaler.frontend.utils import APIClient, format_currency, format_score

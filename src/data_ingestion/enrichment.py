@@ -4,40 +4,55 @@ Cross-references tax sale properties with code enforcement violations
 to identify high-value wholesale opportunities
 """
 import pandas as pd
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 from datetime import datetime
 
+from src.wholesaler.transformers.address_standardizer import AddressStandardizer
 
 class PropertyEnricher:
     """Enriches tax sale properties with code enforcement violation data"""
 
-    def __init__(self, code_enforcement_csv_path: str):
+    def __init__(self, violations: Union[pd.DataFrame, List[Dict]]):
         """
-        Initialize enricher with code enforcement data
+        Initialize enricher with violation records.
 
         Args:
-            code_enforcement_csv_path: Path to code enforcement CSV file
+            violations: DataFrame or list of dicts representing violations
         """
-        print(f"Loading code enforcement data from {code_enforcement_csv_path}...")
-        self.violations_df = pd.read_csv(
-            code_enforcement_csv_path,
-            low_memory=False,
-            dtype={'parcel_id': str}
-        )
+        if violations is None:
+            raise ValueError("Violation records are required")
+
+        self.standardizer = AddressStandardizer()
+        self.violations_df = self._prepare_violations_dataframe(violations)
         print(f"Loaded {len(self.violations_df):,} violation records")
         print(f"Records with parcel IDs: {self.violations_df['parcel_id'].notna().sum():,}")
 
-        # Normalize parcel IDs (remove hyphens, dots, and spaces for matching)
-        self.violations_df['parcel_id_normalized'] = (
-            self.violations_df['parcel_id']
+    @classmethod
+    def from_csv(cls, csv_path: str) -> "PropertyEnricher":
+        """Convenience constructor for CSV inputs (tests/backfills)."""
+        df = pd.read_csv(csv_path, low_memory=False, dtype={'parcel_id': str})
+        return cls(df)
+
+    def _prepare_violations_dataframe(
+        self,
+        violations: Union[pd.DataFrame, List[Dict]]
+    ) -> pd.DataFrame:
+        """Normalize incoming violation records into DataFrame form."""
+        if isinstance(violations, pd.DataFrame):
+            df = violations.copy()
+        else:
+            df = pd.DataFrame.from_records(violations or [])
+
+        if 'parcel_id' not in df.columns:
+            df['parcel_id'] = None
+
+        df['parcel_id_normalized'] = (
+            df['parcel_id']
+            .apply(self.standardizer.normalize_parcel_id)
             .fillna('')
-            .astype(str)
-            .str.replace('-', '', regex=False)
-            .str.replace('.', '', regex=False)
-            .str.replace('0', '', regex=False)  # Remove decimal point artifacts
-            .str.strip()
-            .str.upper()
         )
+
+        return df
 
     def enrich_properties(self, properties: List[Dict]) -> List[Dict]:
         """
@@ -53,8 +68,8 @@ class PropertyEnricher:
 
         for prop in properties:
             # Normalize tax sale parcel ID
-            parcel_id = prop.get('parcel_id', '')
-            parcel_normalized = parcel_id.replace('-', '').upper()
+            parcel_id = prop.get('parcel_id')
+            parcel_normalized = self.standardizer.normalize_parcel_id(parcel_id) or ''
 
             # Find matching violations
             violations = self.violations_df[
@@ -68,7 +83,8 @@ class PropertyEnricher:
             enriched_prop = {
                 **prop,
                 **enrichment_data,
-                'has_violations': len(violations) > 0
+                'has_violations': len(violations) > 0,
+                'parcel_id_normalized': parcel_normalized
             }
 
             enriched.append(enriched_prop)

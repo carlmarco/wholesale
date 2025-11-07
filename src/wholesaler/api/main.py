@@ -7,6 +7,7 @@ from datetime import datetime
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from src.wholesaler.api.dependencies import get_db
 from src.wholesaler.api.schemas import HealthCheck
@@ -49,7 +50,7 @@ def health_check(db: Session = Depends(get_db)):
     """
     # Test database connection
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         database_status = "connected"
     except Exception as e:
         database_status = f"error: {str(e)}"

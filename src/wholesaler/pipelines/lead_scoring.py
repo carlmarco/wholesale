@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 from src.wholesaler.utils.logger import get_logger
+from src.wholesaler.ml.models import PropertyFeatures, predict_lead_probability
 
 logger = get_logger(__name__)
 
@@ -47,11 +48,11 @@ class LeadScorer:
     - Time urgency
     """
 
-    # Tier thresholds
-    TIER_A_THRESHOLD = 75  # Hot leads
-    TIER_B_THRESHOLD = 60  # Good leads
-    TIER_C_THRESHOLD = 40  # Moderate leads
-    # Below 40 = Tier D (Low priority)
+    # Tier thresholds (adjusted to produce realistic distribution with current data)
+    TIER_A_THRESHOLD = 43  # Hot leads (top ~15-20% of leads)
+    TIER_B_THRESHOLD = 35  # Good leads (next ~25-30%)
+    TIER_C_THRESHOLD = 28  # Moderate leads (next ~40-50%)
+    # Below 28 = Tier D (Low priority ~10-15%)
 
     def __init__(self):
         """Initialize lead scorer."""
@@ -86,6 +87,13 @@ class LeadScorer:
         # Determine tier
         tier = self._determine_tier(total_score)
 
+        # Blend ML probability if available
+        property_features = self._build_features(merged_property, total_score, distress_score, value_score, location_score)
+        ml_probability = predict_lead_probability(property_features) if property_features else None
+
+        if ml_probability is not None:
+            total_score = self._blend_with_ml(total_score, ml_probability, reasons)
+
         result = LeadScore(
             total_score=round(total_score, 2),
             distress_score=round(distress_score, 2),
@@ -104,6 +112,56 @@ class LeadScorer:
         )
 
         return result
+
+    def _build_features(
+        self,
+        prop: Dict,
+        total_score: float,
+        distress_score: float,
+        value_score: float,
+        location_score: float,
+    ) -> Optional[PropertyFeatures]:
+        """Construct PropertyFeatures for ML scorer."""
+        parcel_id = prop.get('parcel_id_normalized') or prop.get('parcel_id')
+        property_record = prop.get('property_record', {})
+
+        if not parcel_id:
+            return None
+
+        return PropertyFeatures(
+            parcel_id=parcel_id,
+            city=property_record.get('city') or prop.get('city') or "Orlando",
+            zip_code=property_record.get('zip_code') or prop.get('zip_code'),
+            property_use=property_record.get('property_use'),
+            total_score=total_score,
+            distress_score=distress_score,
+            value_score=value_score,
+            location_score=location_score,
+            has_tax_sale='tax_sale' in prop,
+            has_foreclosure='foreclosure' in prop,
+            tax_sale_opening_bid=prop.get('tax_sale', {}).get('opening_bid'),
+            foreclosure_judgment=prop.get('foreclosure', {}).get('default_amount'),
+        )
+
+    def _blend_with_ml(self, total_score: float, ml_probability: float, reasons: List[str]) -> float:
+        """
+        Combine heuristic score with ML probability.
+
+        Args:
+            total_score: Heuristic total score
+            ml_probability: Probability of Tier A (0-1)
+            reasons: Mutable list of scoring reasons
+
+        Returns:
+            Adjusted total score
+        """
+        adjustment = (ml_probability - 0.5) * 40  # range roughly [-20, +20]
+        if adjustment > 0:
+            reasons.append(f"ML boost: {ml_probability:.2f} Tier-A likelihood")
+        else:
+            reasons.append(f"ML caution: {ml_probability:.2f} Tier-A likelihood")
+
+        return max(0.0, min(100.0, total_score + adjustment))
 
     def _calculate_distress_score(self, prop: Dict, reasons: List[str]) -> float:
         """

@@ -4,6 +4,10 @@ Lead Detail Page
 View comprehensive information about a specific lead including property details,
 scoring breakdown, tax sale/foreclosure info, and historical trends.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
+
 import streamlit as st
 
 from src.wholesaler.frontend.utils import APIClient, get_tier_color, get_tier_label

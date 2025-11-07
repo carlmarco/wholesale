@@ -3,6 +3,10 @@ Leads List Page
 
 Browse and filter lead scores with advanced filtering options.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
+
 import streamlit as st
 
 from src.wholesaler.frontend.utils import APIClient

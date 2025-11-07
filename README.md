@@ -2,6 +2,22 @@
 
 Production-grade automated real estate wholesaling system for identifying undervalued investment opportunities in Orlando, FL using public data sources and distress signal analysis.
 
+## Quick Start
+
+```bash
+# Clone and setup
+git clone <repo-url>
+cd wholesaler
+make setup
+
+# Launch the dashboard
+make dashboard
+```
+
+Dashboard will be available at **http://localhost:8501**
+
+For all available commands, run `make help`
+
 ## Project Goal
 
 Identify profitable wholesale opportunities where:
@@ -118,9 +134,28 @@ wholesaler/
 ### Prerequisites
 
 - Python 3.13+
-- Virtual environment
+- Docker & Docker Compose (for full system)
+- Make (optional, for simplified commands)
 
-### Installation
+### Quick Setup (Recommended)
+
+Using the Makefile for automated setup:
+
+```bash
+# Complete setup (creates .env, installs dependencies, creates directories)
+make setup
+
+# Edit .env file with your credentials
+nano .env
+
+# Launch the complete system (database, Airflow, dashboard)
+make start
+
+# View dashboard
+open http://localhost:8501
+```
+
+### Manual Setup
 
 ```bash
 # Create virtual environment
@@ -129,17 +164,84 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Copy environment template
+cp .env.example .env
+
+# Edit .env and add your credentials
+nano .env
+
+# Start Docker services
+docker-compose up -d
 ```
 
 ### Configuration
 
-1. Copy `.env.example` to `.env`
-2. Add your Socrata API credentials:
-
+1. **API Credentials** - Add to `.env`:
 ```bash
 SOCRATA_API_KEY=your_key_here
 SOCRATA_API_SECRET=your_secret_here
 SOCRATA_APP_TOKEN=your_token_here
+```
+
+2. **Alert Settings** (optional) - See [ALERTS_SETUP.md](ALERTS_SETUP.md):
+```bash
+ALERT_ENABLE_EMAIL=true
+ALERT_EMAIL=your-email@example.com
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+```
+
+## Makefile Commands
+
+The Makefile provides convenient shortcuts for all common operations:
+
+```bash
+# View all available commands
+make help
+
+# Dashboard & Services
+make dashboard          # Launch dashboard (starts all services)
+make stop              # Stop all services
+make restart           # Restart all services
+make status            # Show service status
+
+# Data Pipeline
+make scrape-data       # Download fresh data from APIs
+make load-data         # Load data into database
+make score-leads       # Run lead scoring
+make pipeline-full     # Run complete pipeline
+
+# Machine Learning
+make train-models      # Train ARV and lead models
+
+# Database
+make db-shell          # Open PostgreSQL shell
+make db-migrate        # Create new migration
+make db-upgrade        # Run migrations
+make stats             # Show database statistics
+
+# Testing & Development
+make test              # Run all tests
+make test-cov          # Run tests with coverage
+make lint              # Run code linting
+make format            # Auto-format code
+
+# Monitoring
+make logs              # View all logs
+make logs-dashboard    # View dashboard logs
+make logs-airflow      # View Airflow logs
+make health            # Check service health
+
+# Airflow
+make airflow-trigger-all  # Manually trigger all DAGs
+make airflow-unpause      # Enable automatic scheduling
+make airflow-list         # List all DAGs
+
+# Cleanup
+make clean             # Remove temporary files
+make clean-all         # Remove all generated files
 ```
 
 ## Usage

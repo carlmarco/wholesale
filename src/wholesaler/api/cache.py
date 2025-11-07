@@ -3,12 +3,15 @@ Redis Caching Layer
 
 Provides caching decorators and utilities for API endpoints.
 """
+import asyncio
 import json
 import hashlib
 from typing import Optional, Callable, Any
 from functools import wraps
 import redis
 from redis.exceptions import ConnectionError as RedisConnectionError
+
+from config.settings import settings
 
 # Redis client configuration
 redis_client: Optional[redis.Redis] = None
@@ -24,11 +27,15 @@ def get_redis_client() -> Optional[redis.Redis]:
     global redis_client
 
     if redis_client is None:
+        redis_url = settings.redis_url
+
+        if not redis_url:
+            print("Redis connection skipped: redis_url not configured")
+            return None
+
         try:
-            redis_client = redis.Redis(
-                host="localhost",
-                port=6379,
-                db=0,
+            redis_client = redis.Redis.from_url(
+                redis_url,
                 decode_responses=True,
                 socket_connect_timeout=2,
                 socket_timeout=2,
@@ -88,8 +95,8 @@ def cache_result(prefix: str, ttl: int = 300):
             cache_key = make_cache_key(prefix, *args, **kwargs)
 
             try:
-                # Try to get cached result
-                cached = client.get(cache_key)
+                # Try to get cached result without blocking event loop
+                cached = await asyncio.to_thread(client.get, cache_key)
                 if cached is not None:
                     return json.loads(cached)
             except Exception as e:
@@ -99,12 +106,9 @@ def cache_result(prefix: str, ttl: int = 300):
             result = await func(*args, **kwargs)
 
             try:
-                # Cache the result
-                client.setex(
-                    cache_key,
-                    ttl,
-                    json.dumps(result, default=str)  # Handle datetime/date serialization
-                )
+                # Cache the result without blocking
+                payload = json.dumps(result, default=str)
+                await asyncio.to_thread(client.setex, cache_key, ttl, payload)
             except Exception as e:
                 print(f"Cache write error: {e}")
 

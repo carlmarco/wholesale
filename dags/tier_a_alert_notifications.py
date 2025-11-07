@@ -94,16 +94,39 @@ def identify_new_tier_a_leads(**context):
 
     logger.info("identifying_new_tier_a_leads", total_tier_a=len(all_tier_a_leads))
 
-    # In production, we would compare with yesterday's history
-    # For now, consider all Tier A leads as "new" for notification purposes
-    new_tier_a_leads = all_tier_a_leads
+    if not all_tier_a_leads:
+        logger.info("no_tier_a_leads_found")
+        context['task_instance'].xcom_push(key='new_tier_a_leads', value=[])
+        return 0
 
-    # TODO: Query lead_score_history to find leads that weren't Tier A yesterday
-    # with get_db_session() as session:
-    #     yesterday = date.today() - timedelta(days=1)
-    #     # Query history and filter for new Tier A leads
+    # Compare with yesterday's history to find truly new Tier A leads
+    with get_db_session() as session:
+        yesterday = date.today() - timedelta(days=1)
 
-    logger.info("new_tier_a_leads_identified", count=len(new_tier_a_leads))
+        # Query yesterday's history for all parcels that are currently Tier A
+        current_parcel_ids = {lead['parcel_id_normalized'] for lead in all_tier_a_leads}
+
+        # Get historical records from yesterday for these parcels
+        from src.wholesaler.db.models import LeadScoreHistory
+        historical_tier_a = session.query(LeadScoreHistory.parcel_id_normalized).filter(
+            LeadScoreHistory.parcel_id_normalized.in_(current_parcel_ids),
+            LeadScoreHistory.snapshot_date == yesterday,
+            LeadScoreHistory.tier == 'A'
+        ).all()
+
+        # Extract parcel IDs that were already Tier A yesterday
+        yesterday_tier_a_parcels = {record.parcel_id_normalized for record in historical_tier_a}
+
+        # Filter for leads that are Tier A today but weren't yesterday
+        new_tier_a_leads = [
+            lead for lead in all_tier_a_leads
+            if lead['parcel_id_normalized'] not in yesterday_tier_a_parcels
+        ]
+
+        logger.info("new_tier_a_leads_identified",
+                   count=len(new_tier_a_leads),
+                   total_tier_a=len(all_tier_a_leads),
+                   previously_tier_a=len(yesterday_tier_a_parcels))
 
     # Store for downstream tasks
     context['task_instance'].xcom_push(key='new_tier_a_leads', value=new_tier_a_leads)
