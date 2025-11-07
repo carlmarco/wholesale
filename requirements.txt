@@ -3,7 +3,7 @@ certifi==2025.10.5
 charset-normalizer==3.4.4
 idna==3.11
 numpy==2.3.4
-packaging==25.0
+packaging==24.2
 pandas==2.3.3
 Pygments==2.19.2
 pyproj==3.7.2
@@ -32,11 +32,10 @@ SQLAlchemy==2.0.36
 psycopg2-binary==2.9.10
 alembic==1.14.0
 GeoAlchemy2==0.15.2
-SQLAlchemy-Utils==0.42.3
+SQLAlchemy-Utils==0.42.0
 
 # Workflow orchestration (Phase 2)
-apache-airflow==2.10.4
-redis==5.2.1
+apache-airflow==3.1.2
 
 # API (Phase 3A)
 fastapi==0.115.0
@@ -52,7 +51,7 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
 
-# Caching (Phase 3C)
+# Caching (Phase 2 & 3C)
 redis==5.2.1
 hiredis==3.0.0
 
