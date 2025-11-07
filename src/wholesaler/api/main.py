@@ -10,13 +10,14 @@ from sqlalchemy.orm import Session
 
 from src.wholesaler.api.dependencies import get_db
 from src.wholesaler.api.schemas import HealthCheck
-from src.wholesaler.api.routers import leads, properties, stats
+from src.wholesaler.api.routers import leads, properties, stats, auth, analysis
+from src.wholesaler.api.cache import get_cache_stats
 
 # Create FastAPI app
 app = FastAPI(
     title="Wholesaler Lead Management API",
-    description="REST API for managing and scoring real estate wholesale leads",
-    version="0.3.0",
+    description="REST API for managing and scoring real estate wholesale leads with ML-powered analysis",
+    version="0.3.1",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -31,9 +32,11 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router)
 app.include_router(leads.router)
 app.include_router(properties.router)
 app.include_router(stats.router)
+app.include_router(analysis.router)
 
 
 @app.get("/health", response_model=HealthCheck, tags=["health"])
@@ -51,9 +54,13 @@ def health_check(db: Session = Depends(get_db)):
     except Exception as e:
         database_status = f"error: {str(e)}"
 
+    # Check cache status
+    cache_stats = get_cache_stats()
+    cache_status = "connected" if cache_stats.get("available") else "unavailable"
+
     return HealthCheck(
         status="healthy" if database_status == "connected" else "degraded",
-        version="0.3.0",
+        version="0.3.1",
         database=database_status,
         timestamp=datetime.utcnow(),
     )
@@ -69,9 +76,17 @@ def root():
     """
     return {
         "name": "Wholesaler Lead Management API",
-        "version": "0.3.0",
+        "version": "0.3.1",
         "docs": "/docs",
         "health": "/health",
+        "features": [
+            "JWT Authentication",
+            "Redis Caching",
+            "ML-Powered Deal Analysis",
+            "ARV Estimation",
+            "Repair Cost Estimation",
+            "ROI Calculator",
+        ]
     }
 
 
