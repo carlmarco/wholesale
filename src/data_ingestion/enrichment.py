@@ -1,8 +1,7 @@
 """
 Property Enrichment Module
-
 Cross-references tax sale properties with code enforcement violations
-to identify high-value wholesale opportunities.
+to identify high-value wholesale opportunities
 """
 import pandas as pd
 from typing import List, Dict, Optional
@@ -10,17 +9,11 @@ from datetime import datetime
 
 
 class PropertyEnricher:
-    """
-    Enriches tax sale properties with code enforcement violation data.
-
-    This class loads code enforcement violation data and matches it with
-    tax sale properties based on normalized parcel IDs, providing violation
-    metrics that indicate property distress levels.
-    """
+    """Enriches tax sale properties with code enforcement violation data"""
 
     def __init__(self, code_enforcement_csv_path: str):
         """
-        Initialize enricher with code enforcement data.
+        Initialize enricher with code enforcement data
 
         Args:
             code_enforcement_csv_path: Path to code enforcement CSV file
@@ -34,29 +27,21 @@ class PropertyEnricher:
         print(f"Loaded {len(self.violations_df):,} violation records")
         print(f"Records with parcel IDs: {self.violations_df['parcel_id'].notna().sum():,}")
 
-        # Normalize parcel IDs by removing formatting characters
-        # Tax sale format: 29-22-28-8850-02-050
-        # Code enforcement format: 292231182405260.0
-        # Normalized format: 292228885002050 (remove dashes and decimal points)
+        # Normalize parcel IDs (remove hyphens, dots, and spaces for matching)
         self.violations_df['parcel_id_normalized'] = (
             self.violations_df['parcel_id']
             .fillna('')
             .astype(str)
             .str.replace('-', '', regex=False)
-            .str.replace('.0', '', regex=False)
+            .str.replace('.', '', regex=False)
+            .str.replace('0', '', regex=False)  # Remove decimal point artifacts
             .str.strip()
             .str.upper()
         )
 
-        # Display sample for debugging
-        sample_normalized = self.violations_df[
-            self.violations_df['parcel_id_normalized'] != ''
-        ]['parcel_id_normalized'].head(5).tolist()
-        print(f"Sample normalized IDs: {sample_normalized[:3]}")
-
     def enrich_properties(self, properties: List[Dict]) -> List[Dict]:
         """
-        Enrich tax sale properties with violation data.
+        Enrich tax sale properties with violation data
 
         Args:
             properties: List of tax sale property dictionaries
@@ -67,15 +52,9 @@ class PropertyEnricher:
         enriched = []
 
         for prop in properties:
-            # Normalize tax sale parcel ID using same logic
+            # Normalize tax sale parcel ID
             parcel_id = prop.get('parcel_id', '')
-            parcel_normalized = (
-                parcel_id
-                .replace('-', '')
-                .replace('.0', '')
-                .strip()
-                .upper()
-            )
+            parcel_normalized = parcel_id.replace('-', '').upper()
 
             # Find matching violations
             violations = self.violations_df[
@@ -89,8 +68,7 @@ class PropertyEnricher:
             enriched_prop = {
                 **prop,
                 **enrichment_data,
-                'has_violations': len(violations) > 0,
-                'parcel_id_normalized': parcel_normalized
+                'has_violations': len(violations) > 0
             }
 
             enriched.append(enriched_prop)
@@ -99,14 +77,7 @@ class PropertyEnricher:
 
     def _calculate_violation_metrics(self, violations: pd.DataFrame) -> Dict:
         """
-        Calculate violation metrics for a property.
-
-        Metrics include:
-        - Total violation count
-        - Open vs closed violations
-        - Types of violations
-        - Most recent violation date
-        - Average resolution time
+        Calculate violation metrics for a property
 
         Args:
             violations: DataFrame of violations for a specific parcel
@@ -154,19 +125,16 @@ class PropertyEnricher:
         min_violations: int = 1
     ) -> List[Dict]:
         """
-        Filter and rank properties by wholesale opportunity score.
-
-        Properties with more violations are ranked higher, as they indicate
-        greater distress and potentially more motivated sellers.
+        Filter and rank properties by wholesale opportunity score
 
         Args:
             enriched_properties: List of enriched property dictionaries
             min_violations: Minimum violation count threshold
 
         Returns:
-            Sorted list of high-opportunity properties (descending by violation count)
+            Sorted list of high-opportunity properties
         """
-        # Filter properties meeting minimum violation threshold
+        # Filter properties with violations
         opportunities = [
             prop for prop in enriched_properties
             if prop['violation_count'] >= min_violations
@@ -179,47 +147,36 @@ class PropertyEnricher:
 
     def display_enriched_property(self, prop: Dict, index: int = 1):
         """
-        Display a single enriched property with violation details.
+        Display a single enriched property with violation details
 
         Args:
             prop: Enriched property dictionary
             index: Property index number for display
         """
-        # Header with opportunity flag
-        opportunity_flag = " [HIGH OPPORTUNITY]" if prop['violation_count'] > 0 else ""
-        print(f"\n[Property {index}]{opportunity_flag}")
-
-        # Basic property info
+        print(f"\n[Property {index}] {'HIGH OPPORTUNITY' if prop['violation_count'] > 0 else ''}")
         print(f"  TDA Number:         {prop['tda_number']}")
         print(f"  Sale Date:          {prop['sale_date']}")
         print(f"  Deed Status:        {prop['deed_status']}")
         print(f"  Parcel ID:          {prop['parcel_id']}")
         print(f"  Coordinates:        ({prop['latitude']:.6f}, {prop['longitude']:.6f})")
-
-        # Violation metrics
         print(f"\n  VIOLATION METRICS:")
         print(f"    Total Violations:    {prop['violation_count']}")
         print(f"    Open Violations:     {prop['open_violations']}")
         print(f"    Closed Violations:   {prop['closed_violations']}")
-
-        # Violation types (limit to 5 for readability)
-        types_display = ', '.join(prop['violation_types'][:5]) if prop['violation_types'] else 'N/A'
-        print(f"    Violation Types:     {types_display}")
+        print(f"    Violation Types:     {', '.join(prop['violation_types'][:5]) if prop['violation_types'] else 'N/A'}")
         print(f"    Most Recent:         {prop['most_recent_violation'] or 'N/A'}")
         print(f"    Avg Days to Resolve: {prop['avg_days_to_resolve'] or 'N/A'}")
 
-        # Wholesale insights for properties with violations
         if prop['violation_count'] > 0:
-            print(f"\n  WHOLESALE INSIGHT:")
+            print(f"\n  💡WHOLESALE INSIGHT:")
             if prop['open_violations'] > 0:
-                print(f"    - {prop['open_violations']} open violations indicate motivated seller")
+                print(f"    {prop['open_violations']} open violations - owner may be motivated to sell")
             if prop['violation_count'] >= 3:
-                print(f"    - {prop['violation_count']} total violations suggest high distress")
-            print(f"    - Use violation data to estimate repair costs and negotiate")
+                print(f"    {prop['violation_count']} total violations - high distress indicator")
 
     def display_summary_stats(self, enriched_properties: List[Dict]):
         """
-        Display summary statistics for enriched dataset.
+        Display summary statistics for enriched dataset
 
         Args:
             enriched_properties: List of enriched property dictionaries
@@ -236,6 +193,5 @@ class PropertyEnricher:
         print(f"  Properties with Violations: {with_violations} ({with_violations/total*100:.1f}%)")
         print(f"  Total Violations:           {total_violations}")
         print(f"  Open Violations:            {total_open}")
-        if total > 0:
-            print(f"  Avg Violations per Property: {total_violations/total:.1f}")
+        print(f"  Avg Violations per Property: {total_violations/total:.1f}")
         print(f"{'='*80}\n")

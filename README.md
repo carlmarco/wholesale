@@ -13,17 +13,17 @@ ARV * 0.7 - repair_costs - acquisition_cost > $15,000 profit
 
 **Phase 1: COMPLETE** - Foundation & Core Pipeline
 
-- ✅ Tax sale property scraper (ArcGIS API)
-- ✅ Foreclosure data scraper (ArcGIS API)
-- ✅ Property records scraper (Property Appraiser API)
-- ✅ Code enforcement violation data (Socrata API)
-- ✅ Geographic enrichment with coordinate transformation
-- ✅ Address standardization
-- ✅ Data deduplication pipeline
-- ✅ Lead scoring algorithm
-- ✅ Comprehensive unit tests (115 passing)
-- ✅ Structured logging with structlog
-- ✅ Configuration management with Pydantic
+- Tax sale property scraper (ArcGIS API)
+- Foreclosure data scraper (ArcGIS API)
+- Property records scraper (Property Appraiser API)
+- Code enforcement violation data (Socrata API)
+- Geographic enrichment with coordinate transformation
+- Address standardization
+- Data deduplication pipeline
+- Lead scoring algorithm
+- Comprehensive unit tests (115 passing)
+- Structured logging with structlog
+- Configuration management with Pydantic
 
 ## Data Sources
 
@@ -327,15 +327,15 @@ pytest tests/ -v -m "not integration"
 
 ## Key Features
 
-✅ **Multi-source data integration** from 4 different APIs
-✅ **Coordinate transformation** from State Plane to WGS84
-✅ **Geographic proximity matching** with Haversine distance
-✅ **Address standardization** across all data sources
-✅ **Smart deduplication** by normalized parcel ID
-✅ **Lead scoring algorithm** with 4-component weighting
-✅ **Production logging** with structured JSON output
-✅ **Type-safe models** with Pydantic validation
-✅ **Comprehensive testing** with 115 unit tests
+**Multi-source data integration** from 4 different APIs
+**Coordinate transformation** from State Plane to WGS84
+**Geographic proximity matching** with Haversine distance
+**Address standardization** across all data sources
+**Smart deduplication** by normalized parcel ID
+**Lead scoring algorithm** with 4-component weighting
+**Production logging** with structured JSON output
+**Type-safe models** with Pydantic validation
+**Comprehensive testing** with 115 unit tests
 
 ## License
 
