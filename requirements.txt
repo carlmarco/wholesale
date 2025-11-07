@@ -38,6 +38,15 @@ SQLAlchemy-Utils==0.42.3
 apache-airflow==2.10.4
 redis==5.2.1
 
+# API (Phase 3A)
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# Frontend (Phase 3B)
+streamlit==1.39.0
+plotly==5.24.1
+pydeck==0.9.1
+
 # Testing
 pytest==8.4.2
 pytest-cov==7.0.0
