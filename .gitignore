@@ -67,3 +67,22 @@ htmlcov/
 
 # Docker
 *.dockerignore
+docker-compose.override.yml
+
+# Database (Phase 2)
+*.db
+*.sqlite
+*.sqlite3
+
+# Airflow (Phase 2)
+logs/
+airflow.db
+airflow.cfg
+webserver_config.py
+airflow-webserver.pid
+standalone_admin_password.txt
+
+# Alembic (Phase 2)
+# Keep migrations in git, but exclude bytecode
+alembic/__pycache__/
+alembic/versions/__pycache__/

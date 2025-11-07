@@ -39,6 +39,35 @@ class Settings(BaseSettings):
     # Data file paths
     code_enforcement_csv: str = "data/code_enforcement_data.csv"
 
+    # Database settings (Phase 2)
+    database_url: str = "postgresql+psycopg2://wholesaler_user:wholesaler_pass@localhost:5432/wholesaler"
+    database_pool_size: int = 20
+    database_max_overflow: int = 10
+    database_pool_timeout: int = 30
+    database_pool_recycle: int = 3600
+    database_echo: bool = False  # Set to True for SQL query logging
+
+    # Airflow settings (Phase 2)
+    airflow_home: Optional[str] = None
+    airflow_dags_folder: str = "dags"
+    airflow_database_url: str = "postgresql+psycopg2://wholesaler_user:wholesaler_pass@localhost:5432/airflow"
+
+    # Redis settings (Phase 2)
+    redis_url: str = "redis://localhost:6379/0"
+
+    # ETL settings (Phase 2)
+    etl_batch_size: int = 1000
+    etl_enable_incremental: bool = True
+    etl_retention_days: int = 365
+    etl_max_retries: int = 3
+    etl_retry_delay_seconds: int = 60
+
+    # Alert settings (Phase 2)
+    alert_email: Optional[str] = None
+    alert_slack_webhook: Optional[str] = None
+    alert_enable_email: bool = False
+    alert_enable_slack: bool = False
+
     # Logging settings
     log_level: str = "INFO"
     log_format: str = "json"

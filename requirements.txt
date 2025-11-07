@@ -1,18 +1,12 @@
+# Core dependencies
 certifi==2025.10.5
 charset-normalizer==3.4.4
-coverage==7.11.0
-et_xmlfile==2.0.0
 idna==3.11
-iniconfig==2.3.0
 numpy==2.3.4
-openpyxl==3.1.5
 packaging==25.0
 pandas==2.3.3
-pluggy==1.6.0
 Pygments==2.19.2
 pyproj==3.7.2
-pytest==8.4.2
-pytest-cov==7.0.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
 requests==2.32.5
@@ -20,7 +14,35 @@ six==1.17.0
 sodapy==2.2.0
 tzdata==2025.2
 urllib3==2.5.0
+
+# Data validation and configuration
 pydantic==2.10.4
 pydantic-settings==2.7.1
-structlog==25.1.0
 python-dotenv==1.0.1
+
+# Logging
+structlog==25.1.0
+
+# Excel processing
+openpyxl==3.1.5
+et_xmlfile==2.0.0
+
+# Database (Phase 2)
+SQLAlchemy==2.0.36
+psycopg2-binary==2.9.10
+alembic==1.14.0
+GeoAlchemy2==0.15.2
+SQLAlchemy-Utils==0.42.3
+
+# Workflow orchestration (Phase 2)
+apache-airflow==2.10.4
+redis==5.2.1
+
+# Testing
+pytest==8.4.2
+pytest-cov==7.0.0
+pytest-postgresql==6.1.1
+Faker==33.1.0
+coverage==7.11.0
+iniconfig==2.3.0
+pluggy==1.6.0
