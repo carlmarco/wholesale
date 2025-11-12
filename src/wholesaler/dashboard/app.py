@@ -14,7 +14,7 @@ from typing import Dict, List, Any
 # Page configuration
 st.set_page_config(
     page_title="Wholesaler Lead Management",
-    page_icon="🏡",
+    page_icon=":house:",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -28,7 +28,7 @@ except:
     API_BASE_URL = "http://localhost:8000/api/v1"
 
 
-def fetch_api(endpoint: str) -> Dict[str, Any]:
+def fetch_api(endpoint: str) -> Any:
     """Fetch data from API endpoint."""
     try:
         response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=10)
@@ -151,15 +151,9 @@ def show_overview_page(stats_data: Dict):
     with col2:
         st.subheader("Score Distribution")
         # Fetch leads for score distribution
-        leads_response = fetch_api("/leads?limit=1000")
-        leads_list = []
-        if isinstance(leads_response, dict) and 'leads' in leads_response:
-            leads_list = leads_response['leads']
-        elif isinstance(leads_response, list):
-            leads_list = leads_response
-
-        if leads_list:
-            scores = [lead.get('total_score', 0) for lead in leads_list]
+        leads = normalize_leads_response(fetch_api("/leads?limit=1000"))
+        if leads:
+            scores = [lead.get('total_score', 0) for lead in leads]
             fig = px.histogram(
                 x=scores,
                 nbins=20,
@@ -178,23 +172,28 @@ def show_overview_page(stats_data: Dict):
     st.success("All services healthy ✓")
 
 
+def normalize_leads_response(response: Any) -> List[Dict[str, Any]]:
+    """Normalize API response containing leads."""
+    if isinstance(response, dict):
+        if isinstance(response.get("leads"), list):
+            return response["leads"]
+        if isinstance(response.get("data"), list):
+            return response["data"]
+    elif isinstance(response, list):
+        return response
+    return []
+
+
 def show_tier_a_leads_page():
     """Show Tier A leads page."""
     st.title("Tier A Leads - Hot Investment Opportunities")
 
     # Fetch Tier A leads
-    leads_response = fetch_api("/leads?tier=A&limit=100")
-    leads_list = []
-    if isinstance(leads_response, dict) and 'leads' in leads_response:
-        leads_list = leads_response['leads']
-    elif isinstance(leads_response, list):
-        leads_list = leads_response
+    leads = normalize_leads_response(fetch_api("/leads?tier=A&limit=100"))
 
-    if not leads_list:
+    if not leads:
         st.warning("No Tier A leads found. Try adjusting lead scoring thresholds.")
         return
-
-    leads = leads_list
     st.success(f"Found {len(leads)} Tier A leads")
 
     # Display top leads
@@ -246,29 +245,25 @@ def show_all_leads_page(tier_filter: List[str], min_score: int):
     params.append("limit=500")
 
     query_string = "&".join(params)
-    leads_response = fetch_api(f"/leads?{query_string}")
-    leads_list = []
-    if isinstance(leads_response, dict) and 'leads' in leads_response:
-        leads_list = leads_response['leads']
-    elif isinstance(leads_response, list):
-        leads_list = leads_response
+    leads = normalize_leads_response(fetch_api(f"/leads?{query_string}"))
 
-    if not leads_list:
+    if not leads:
         st.warning("No leads found matching your filters.")
         return
 
-    df = pd.DataFrame(leads_list)
+    df = pd.DataFrame(leads)
 
-    st.success(f"Found {len(leads_list)} leads")
+    st.success(f"Found {len(leads)} leads")
 
-    preferred_columns = [
+    # Display dataframe
+    columns = [
         'tier', 'total_score', 'situs_address', 'city',
         'distress_score', 'value_score', 'location_score'
     ]
-    available_columns = [col for col in preferred_columns if col in df.columns]
+    available = [col for col in columns if col in df.columns]
 
     st.dataframe(
-        df[available_columns] if available_columns else df,
+        df[available] if available else df,
         use_container_width=True,
         height=600
     )
@@ -278,22 +273,14 @@ def show_properties_page():
     """Show properties page."""
     st.title("Property Database")
 
-    # Current API only exposes properties via lead listings
-    properties_response = fetch_api("/leads?limit=200&sort_by=situs_address")
-    properties_list = []
-
-    if isinstance(properties_response, dict) and 'leads' in properties_response:
-        properties_list = properties_response['leads']
-    elif isinstance(properties_response, list):
-        properties_list = properties_response
-
-    if not properties_list:
-        st.warning("No property data available from API.")
+    leads = normalize_leads_response(fetch_api("/leads?limit=200&sort_by=situs_address"))
+    if not leads:
+        st.warning("No property data available.")
         return
 
-    df = pd.DataFrame(properties_list)
+    df = pd.DataFrame(leads)
 
-    st.success(f"Showing {len(properties_list)} property records derived from leads")
+    st.success(f"Showing {len(leads)} property records (derived from leads)")
 
     # Display dataframe
     st.dataframe(df, use_container_width=True, height=600)

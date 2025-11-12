@@ -184,7 +184,7 @@ class PropertyEnricher:
         print(f"    Avg Days to Resolve: {prop['avg_days_to_resolve'] or 'N/A'}")
 
         if prop['violation_count'] > 0:
-            print(f"\n  💡WHOLESALE INSIGHT:")
+            print(f"\n  WHOLESALE INSIGHT:")
             if prop['open_violations'] > 0:
                 print(f"    {prop['open_violations']} open violations - owner may be motivated to sell")
             if prop['violation_count'] >= 3:

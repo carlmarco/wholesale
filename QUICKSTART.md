@@ -71,6 +71,11 @@ make scrape-data       # Download fresh data
 make load-data         # Load to database
 make score-leads       # Score leads
 
+# New hybrid ingestion workflow
+make ingest-seeds      # Collect seeds from tax sales + distress signals
+make enrich-seeds      # Normalize and enrich collected seeds
+make data-quality      # Review seed counts & match rates
+
 # Train ML models (ARV + lead qualification)
 make train-models
 ```
@@ -206,9 +211,11 @@ make db-reset
 ## Documentation
 
 - **[README.md](README.md)** - Complete project overview
-- **[ML_TRAINING_GUIDE.md](ML_TRAINING_GUIDE.md)** - ML model training
-- **[ALERTS_SETUP.md](ALERTS_SETUP.md)** - Email & Slack alerts
-- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Testing documentation
+- **[ML Training Guide](docs/setup/ml_training_guide.md)** - ML model training
+- **[Alerts Setup](docs/setup/alerts_setup.md)** - Email & Slack alerts
+- **[Testing Guide](docs/guides/testing_guide.md)** - Testing documentation
+- **[Database Schema](docs/guides/database_schema.md)** - Database structure
+- **[Phase 4 Overview](PHASE_4_OVERVIEW.md)** - AI-agent outreach system
 
 ---
 
@@ -256,6 +263,6 @@ make clean-all
 - [ ] 13+ Tier A leads visible in dashboard
 - [ ] ML models trained (`make train-models`)
 - [ ] Airflow DAGs enabled (`make airflow-unpause`)
-- [ ] Email/Slack alerts configured (optional - see ALERTS_SETUP.md)
+- [ ] Email/Slack alerts configured (optional - see [Alerts Setup](docs/setup/alerts_setup.md))
 
 ---

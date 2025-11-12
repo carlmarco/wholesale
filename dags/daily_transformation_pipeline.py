@@ -11,7 +11,7 @@ from airflow.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.utils.dates import days_ago
 
-from src.wholesaler.enrichers.geographic_enricher import GeographicEnricher
+from src.wholesaler.enrichers.geo_enricher import GeoPropertyEnricher
 from src.wholesaler.transformers.deduplicator import PropertyDeduplicator
 from src.wholesaler.etl import PropertyLoader, PropertyRecordLoader
 from src.wholesaler.db import PropertyRepository, get_db_session
@@ -75,7 +75,7 @@ def enrich_properties(**context):
 
     logger.info("property_enrichment_started", count=len(property_ids))
 
-    enricher = GeographicEnricher()
+    enricher = GeoPropertyEnricher()
     stats = {'processed': 0, 'enriched': 0, 'failed': 0}
 
     with get_db_session() as session:
@@ -102,8 +102,9 @@ def enrich_properties(**context):
                     zip_code=property_obj.zip_code,
                 )
 
-                # Enrich property
-                enriched = enricher.enrich_property(tax_sale_prop)
+                # Enrich property (enrich_properties expects a list, so pass single-item list)
+                enriched_list = enricher.enrich_properties([tax_sale_prop])
+                enriched = enriched_list[0] if enriched_list else None
 
                 if enriched:
                     # Update property with enriched data

@@ -102,31 +102,25 @@ wholesaler/
 ### Data Pipeline Flow
 
 ```
-1. Data Ingestion (Scrapers)
-   ├── Tax Sales (86 properties)
-   ├── Foreclosures (active lis pendens)
-   ├── Property Records (valuations, taxes)
-   └── Code Violations (40K+ records)
+1. Seed Collection (Dual Pools)
+   ├── Tax Sale Candidates (ArcGIS)
+   └── Distress Candidates (Code Violations + Foreclosures)
           ↓
-2. Coordinate Transformation
-   └── State Plane (EPSG:2881) → WGS84 (EPSG:4326)
+2. Unified Enrichment Pipeline
+   ├── Coordinate transformation + address normalization
+   ├── Code violation proximity metrics
+   └── Merge with property records & tax/foreclosure data
           ↓
-3. Geographic Enrichment
-   └── Find violations within 0.25 mile radius
+3. Data Deduplication
+   └── One record per normalized parcel ID with seed_type metadata
           ↓
-4. Address Standardization
-   └── Normalize addresses, parcel IDs
+4. Lead Scoring (0-100, Tiers A/B/C/D)
+   ├── Distress Score (tax sale, foreclosure, violations)
+   ├── Value Score (equity, market value, tax burden)
+   ├── Location Score (neighborhood condition)
+   └── Urgency Score (auction dates, timelines)
           ↓
-5. Data Deduplication
-   └── Merge sources by normalized parcel ID
-          ↓
-6. Lead Scoring (0-100, Tiers A/B/C/D)
-   ├── Distress Score (35%): tax sale, foreclosure, violations
-   ├── Value Score (30%): equity, market value, tax burden
-   ├── Location Score (20%): neighborhood condition
-   └── Urgency Score (15%): auction dates, timelines
-          ↓
-7. Ranked Investment Opportunities
+5. Ranked Investment Opportunities + ML ARV estimates
 ```
 
 ## Setup

@@ -5,6 +5,7 @@ Provides CRUD operations and domain-specific queries for all models.
 """
 from datetime import date, datetime
 from typing import List, Optional, Dict, Any, Type, TypeVar
+import json
 
 from sqlalchemy import select, update, delete, func, and_, or_, desc
 from sqlalchemy.dialects.postgresql import insert
@@ -19,6 +20,7 @@ from src.wholesaler.db.models import (
     CodeViolation,
     LeadScore,
     LeadScoreHistory,
+    EnrichedSeed,
     DataIngestionRun,
 )
 from src.wholesaler.db.session import get_db_session, with_retry
@@ -865,3 +867,207 @@ class DataIngestionRunRepository(BaseRepository):
         ).order_by(desc(DataIngestionRun.started_at)).limit(limit)
 
         return session.execute(query).scalars().all()
+
+
+class EnrichedSeedRepository(BaseRepository):
+    """Repository for EnrichedSeed model (staging table for seed-based ingestion)."""
+
+    def __init__(self):
+        super().__init__(EnrichedSeed)
+
+    def upsert(
+        self,
+        session: Session,
+        parcel_id_normalized: str,
+        seed_type: str,
+        enriched_data: Dict[str, Any]
+    ) -> EnrichedSeed:
+        """
+        Insert or update enriched seed by parcel ID and seed type.
+
+        Args:
+            session: Database session
+            parcel_id_normalized: Normalized parcel ID
+            seed_type: Seed source type (tax_sale, code_violation, foreclosure)
+            enriched_data: Full enriched record from UnifiedEnrichmentPipeline
+
+        Returns:
+            EnrichedSeed instance
+        """
+        # Extract violation metadata if present
+        violation_count = enriched_data.get('violation_count', 0)
+        most_recent_violation = _coerce_date(enriched_data.get('most_recent_violation'))
+
+        stored_enriched = enriched_data
+        bind = session.get_bind()
+        if bind and bind.dialect.name == "sqlite":
+            stored_enriched = json.dumps(enriched_data)
+
+        seed_data = {
+            'parcel_id_normalized': parcel_id_normalized,
+            'seed_type': seed_type,
+            'violation_count': violation_count,
+            'most_recent_violation': most_recent_violation,
+            'enriched_data': stored_enriched,
+        }
+
+        stmt = insert(EnrichedSeed).values(**seed_data)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=['parcel_id_normalized', 'seed_type'],
+            set_={
+                'violation_count': violation_count,
+                'most_recent_violation': most_recent_violation,
+                'enriched_data': stored_enriched,
+                'updated_at': datetime.now()
+            }
+        )
+
+        session.execute(stmt)
+        session.flush()
+
+        query = select(EnrichedSeed).where(
+            and_(
+                EnrichedSeed.parcel_id_normalized == parcel_id_normalized,
+                EnrichedSeed.seed_type == seed_type
+            )
+        )
+        return session.execute(query).scalar_one()
+
+    def get_unprocessed(
+        self,
+        session: Session,
+        seed_type: Optional[str] = None,
+        limit: Optional[int] = None
+    ) -> List[EnrichedSeed]:
+        """
+        Get unprocessed enriched seeds.
+
+        Args:
+            session: Database session
+            seed_type: Optional filter by seed type
+            limit: Optional limit
+
+        Returns:
+            List of unprocessed seeds
+        """
+        query = select(EnrichedSeed).where(EnrichedSeed.processed == False)
+
+        if seed_type:
+            query = query.where(EnrichedSeed.seed_type == seed_type)
+
+        query = query.order_by(EnrichedSeed.created_at)
+
+        if limit:
+            query = query.limit(limit)
+
+        return session.execute(query).scalars().all()
+
+    def mark_processed(
+        self,
+        session: Session,
+        seed_id: int,
+        processed_at: Optional[datetime] = None
+    ) -> EnrichedSeed:
+        """
+        Mark enriched seed as processed.
+
+        Args:
+            session: Database session
+            seed_id: Seed ID
+            processed_at: Timestamp (defaults to now)
+
+        Returns:
+            Updated EnrichedSeed instance
+        """
+        if processed_at is None:
+            processed_at = datetime.now()
+
+        seed = self.get_by_id(session, seed_id)
+        if not seed:
+            raise ValueError(f"EnrichedSeed {seed_id} not found")
+
+        seed.processed = True
+        seed.processed_at = processed_at
+        session.flush()
+
+        logger.info(
+            "enriched_seed_marked_processed",
+            seed_id=seed_id,
+            parcel_id=seed.parcel_id_normalized,
+            seed_type=seed.seed_type
+        )
+
+        return seed
+
+    def get_by_seed_type(
+        self,
+        session: Session,
+        seed_type: str,
+        limit: Optional[int] = None
+    ) -> List[EnrichedSeed]:
+        """
+        Get enriched seeds by seed type.
+
+        Args:
+            session: Database session
+            seed_type: Seed type to filter by
+            limit: Optional limit
+
+        Returns:
+            List of enriched seeds
+        """
+        query = select(EnrichedSeed).where(
+            EnrichedSeed.seed_type == seed_type
+        ).order_by(desc(EnrichedSeed.created_at))
+
+        if limit:
+            query = query.limit(limit)
+
+        return session.execute(query).scalars().all()
+
+    def get_stats(self, session: Session) -> Dict[str, Any]:
+        """
+        Get statistics about enriched seeds.
+
+        Args:
+            session: Database session
+
+        Returns:
+            Dict with statistics
+        """
+        total = session.query(func.count(EnrichedSeed.id)).scalar()
+        processed = session.query(func.count(EnrichedSeed.id)).where(
+            EnrichedSeed.processed == True
+        ).scalar()
+        unprocessed = total - processed
+
+        # Count by seed type
+        by_type = session.query(
+            EnrichedSeed.seed_type,
+            func.count(EnrichedSeed.id)
+        ).group_by(EnrichedSeed.seed_type).all()
+
+        return {
+            'total': total,
+            'processed': processed,
+            'unprocessed': unprocessed,
+            'by_type': {seed_type: count for seed_type, count in by_type}
+        }
+def _coerce_date(value: Any) -> Optional[date]:
+    if value is None or value == "":
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
+            try:
+                return datetime.strptime(value[:len(fmt)], fmt).date()
+            except ValueError:
+                continue
+        try:
+            return datetime.fromisoformat(value).date()
+        except ValueError:
+            return None
+    return None

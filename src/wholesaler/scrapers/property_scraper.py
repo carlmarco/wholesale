@@ -57,6 +57,46 @@ class PropertyScraper:
             spatial_filter="bbox" if bbox else "none"
         )
 
+        # If parcel list is large, chunk into smaller batches to avoid 403 errors
+        if parcel_numbers and len(parcel_numbers) > 25:
+            logger.info("chunking_large_parcel_list", total=len(parcel_numbers), chunk_size=25)
+            all_properties = []
+            for i in range(0, len(parcel_numbers), 25):
+                chunk = parcel_numbers[i:i + 25]
+                logger.info("fetching_chunk", chunk_num=i//25 + 1, chunk_size=len(chunk))
+                chunk_properties = self._fetch_batch(chunk, bbox, None)
+                all_properties.extend(chunk_properties)
+                # Small delay to avoid rate limiting
+                import time
+                time.sleep(0.5)
+
+            logger.info(
+                "fetch_complete",
+                total_properties=len(all_properties),
+                with_coordinates=sum(1 for p in all_properties if p.has_coordinates()),
+                with_valuations=sum(1 for p in all_properties if p.total_mkt)
+            )
+            return all_properties
+
+        return self._fetch_batch(parcel_numbers, bbox, limit)
+
+    def _fetch_batch(
+        self,
+        parcel_numbers: Optional[List[str]] = None,
+        bbox: Optional[tuple] = None,
+        limit: Optional[int] = None
+    ) -> List[PropertyRecord]:
+        """
+        Fetch a single batch of properties from the API.
+
+        Args:
+            parcel_numbers: List of parcel numbers to fetch
+            bbox: Bounding box filter
+            limit: Result limit
+
+        Returns:
+            List of PropertyRecord instances
+        """
         where_clause = "1=1"
         if parcel_numbers:
             parcel_list = "','".join(parcel_numbers)
@@ -102,16 +142,7 @@ class PropertyScraper:
             )
             return []
 
-        properties = self._parse_response(json_data)
-
-        logger.info(
-            "fetch_complete",
-            total_properties=len(properties),
-            with_coordinates=sum(1 for p in properties if p.has_coordinates()),
-            with_valuations=sum(1 for p in properties if p.total_mkt)
-        )
-
-        return properties
+        return self._parse_response(json_data)
 
     def _parse_response(self, json_data: dict) -> List[PropertyRecord]:
         """

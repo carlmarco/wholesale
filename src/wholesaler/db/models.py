@@ -64,11 +64,6 @@ class Property(Base, TimestampMixin, SoftDeleteMixin):
     )
 
     # Spatial data (PostGIS)
-    coordinates: Mapped[Optional[str]] = mapped_column(
-        Geography(geometry_type='POINT', srid=4326),
-        nullable=True,
-        comment="WGS84 coordinates (PostGIS)"
-    )
     latitude: Mapped[Optional[float]] = mapped_column(
         Numeric(10, 7),
         nullable=True,
@@ -124,7 +119,10 @@ class Property(Base, TimestampMixin, SoftDeleteMixin):
             name="check_longitude_range"
         ),
         Index("idx_properties_situs_address", "situs_address"),
-        # Note: GeoAlchemy2 Geography type automatically creates GIST index
+        Index("idx_properties_city", "city"),
+        Index("idx_properties_zip_code", "zip_code"),
+        Index("idx_properties_is_active", "is_active"),
+        # Note: GeoAlchemy2 Geography type automatically creates GIST index on coordinates
     )
 
     def __repr__(self) -> str:
@@ -525,6 +523,7 @@ class LeadScore(Base, TimestampMixin):
         Index("idx_lead_scores_tier", "tier"),
         Index("idx_lead_scores_scored_at", "scored_at"),
         Index("idx_lead_scores_reasons", "reasons", postgresql_using="gin"),
+        Index("idx_lead_scores_tier_score", "tier", "total_score", postgresql_ops={"total_score": "DESC"}),
     )
 
     def __repr__(self) -> str:
@@ -584,6 +583,68 @@ class LeadScoreHistory(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<LeadScoreHistory(parcel_id={self.parcel_id_normalized}, date={self.snapshot_date}, score={self.total_score})>"
+
+
+class EnrichedSeed(Base, TimestampMixin):
+    """Staging table for enriched seed records from UnifiedEnrichmentPipeline."""
+    __tablename__ = "enriched_seeds"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    parcel_id_normalized: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        comment="Normalized parcel ID (digits only)"
+    )
+
+    seed_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        comment="Seed source: tax_sale, code_violation, foreclosure"
+    )
+
+    violation_count: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        default=0,
+        comment="Number of nearby violations found during enrichment"
+    )
+
+    most_recent_violation: Mapped[Optional[date]] = mapped_column(
+        Date,
+        nullable=True,
+        comment="Date of most recent violation"
+    )
+
+    enriched_data: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="Full enriched record from UnifiedEnrichmentPipeline"
+    )
+
+    processed: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Whether seed has been merged into properties table"
+    )
+
+    processed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="When seed was processed into properties table"
+    )
+
+    __table_args__ = (
+        UniqueConstraint('parcel_id_normalized', 'seed_type', name='uq_enriched_seeds_parcel_type'),
+        Index('idx_enriched_seeds_parcel', 'parcel_id_normalized'),
+        Index('idx_enriched_seeds_type', 'seed_type'),
+        Index('idx_enriched_seeds_processed', 'processed'),
+        Index('idx_enriched_seeds_created', 'created_at'),
+    )
+
+    def __repr__(self) -> str:
+        return f"<EnrichedSeed(parcel={self.parcel_id_normalized}, type={self.seed_type}, processed={self.processed})>"
 
 
 class DataIngestionRun(Base, TimestampMixin):

@@ -48,11 +48,18 @@ class LeadScorer:
     - Time urgency
     """
 
-    # Tier thresholds (adjusted to produce realistic distribution with current data)
-    TIER_A_THRESHOLD = 43  # Hot leads (top ~15-20% of leads)
-    TIER_B_THRESHOLD = 35  # Good leads (next ~25-30%)
-    TIER_C_THRESHOLD = 28  # Moderate leads (next ~40-50%)
-    # Below 28 = Tier D (Low priority ~10-15%)
+    # Tier thresholds (increased to ensure only high-quality leads in Tier A)
+    TIER_A_THRESHOLD = 60  # Hot leads (highest quality only)
+    TIER_B_THRESHOLD = 50  # Good leads
+    TIER_C_THRESHOLD = 40  # Moderate leads
+    # Below 40 = Tier D (Low priority)
+
+    # Seed type scoring multipliers
+    SEED_TYPE_WEIGHTS = {
+        'tax_sale': 1.2,        # Boost tax sale seeds (highest priority)
+        'foreclosure': 1.15,    # Boost foreclosure seeds
+        'code_violation': 1.0,  # Standard weight for code violation seeds
+    }
 
     def __init__(self):
         """Initialize lead scorer."""
@@ -112,6 +119,142 @@ class LeadScorer:
         )
 
         return result
+
+    def score_seed_based_lead(self, enriched_data: Dict, seed_type: str) -> LeadScore:
+        """
+        Calculate lead score for a seed-based property from UnifiedEnrichmentPipeline.
+
+        Args:
+            enriched_data: Enriched data dict from enriched_seeds table
+            seed_type: Seed source type (tax_sale, code_violation, foreclosure)
+
+        Returns:
+            LeadScore with detailed breakdown
+        """
+        reasons = []
+
+        # Convert seed-based format to legacy format for scoring compatibility
+        merged_property = self._convert_seed_to_legacy_format(enriched_data, seed_type)
+
+        # Calculate component scores
+        distress_score = self._calculate_distress_score(merged_property, reasons)
+        value_score = self._calculate_value_score(merged_property, reasons)
+        location_score = self._calculate_location_score(merged_property, reasons)
+        urgency_score = self._calculate_urgency_score(merged_property, reasons)
+
+        # Apply seed type weighting
+        seed_weight = self.SEED_TYPE_WEIGHTS.get(seed_type, 1.0)
+        if seed_weight != 1.0:
+            reasons.append(f"Seed type: {seed_type} (weight: {seed_weight}x)")
+
+        # Weighted total score with seed type multiplier
+        total_score = (
+            distress_score * 0.35 +
+            value_score * 0.30 +
+            location_score * 0.20 +
+            urgency_score * 0.15
+        ) * seed_weight
+
+        # Determine tier
+        tier = self._determine_tier(total_score)
+
+        # ML blending (if available)
+        property_features = self._build_features(merged_property, total_score, distress_score, value_score, location_score)
+        ml_probability = predict_lead_probability(property_features) if property_features else None
+
+        if ml_probability is not None:
+            total_score = self._blend_with_ml(total_score, ml_probability, reasons)
+
+        result = LeadScore(
+            total_score=round(total_score, 2),
+            distress_score=round(distress_score, 2),
+            value_score=round(value_score, 2),
+            location_score=round(location_score, 2),
+            urgency_score=round(urgency_score, 2),
+            tier=tier,
+            reasons=reasons
+        )
+
+        logger.debug(
+            "seed_based_lead_scored",
+            parcel=enriched_data.get('parcel_id'),
+            seed_type=seed_type,
+            total_score=result.total_score,
+            tier=result.tier
+        )
+
+        return result
+
+    def _convert_seed_to_legacy_format(self, enriched_data: Dict, seed_type: str) -> Dict:
+        """
+        Convert seed-based enriched data to legacy merged_property format.
+
+        Args:
+            enriched_data: Enriched data from UnifiedEnrichmentPipeline
+            seed_type: Seed type
+
+        Returns:
+            Dict in legacy merged_property format
+        """
+        merged = {
+            'parcel_id_normalized': enriched_data.get('parcel_id'),
+            'parcel_id': enriched_data.get('parcel_id'),
+        }
+
+        # Add seed-specific data based on type
+        if seed_type == 'tax_sale':
+            merged['tax_sale'] = {
+                'tda_number': enriched_data.get('tda_number'),
+                'sale_date': enriched_data.get('sale_date'),
+                'deed_status': enriched_data.get('deed_status'),
+                'opening_bid': enriched_data.get('opening_bid'),
+            }
+
+        elif seed_type == 'foreclosure':
+            merged['foreclosure'] = {
+                'default_amount': enriched_data.get('default_amount'),
+                'opening_bid': enriched_data.get('opening_bid'),
+                'auction_date': enriched_data.get('auction_date'),
+                'lender_name': enriched_data.get('lender_name'),
+            }
+
+        elif seed_type == 'code_violation':
+            # Code violation seeds don't have tax_sale/foreclosure data
+            # but enrichment should have violation data
+            pass
+
+        # Add property record data if available
+        if any(k in enriched_data for k in ['total_mkt', 'total_assd', 'equity_percent', 'owner_name']):
+            merged['property_record'] = {
+                'owner_name': enriched_data.get('owner_name'),
+                'total_mkt': enriched_data.get('total_mkt'),
+                'total_assd': enriched_data.get('total_assd'),
+                'taxable': enriched_data.get('taxable'),
+                'taxes': enriched_data.get('taxes'),
+                'equity_percent': enriched_data.get('equity_percent'),
+                'tax_rate': enriched_data.get('tax_rate'),
+                'year_built': enriched_data.get('year_built'),
+                'living_area': enriched_data.get('living_area'),
+                'lot_size': enriched_data.get('lot_size'),
+                'city': enriched_data.get('city'),
+                'zip_code': enriched_data.get('zip_code'),
+                'property_use': enriched_data.get('property_use'),
+            }
+
+        # Add enrichment data (violations, nearby data)
+        if any(k in enriched_data for k in ['violation_count', 'most_recent_violation', 'nearby_violations']):
+            merged['enrichment'] = {
+                'nearby_violations': enriched_data.get('violation_count', 0) or enriched_data.get('nearby_violations', 0),
+                'nearby_open_violations': enriched_data.get('nearby_open_violations', 0),
+                'most_recent_violation': enriched_data.get('most_recent_violation'),
+            }
+
+        # Add coordinates
+        merged['latitude'] = enriched_data.get('latitude')
+        merged['longitude'] = enriched_data.get('longitude')
+        merged['city'] = enriched_data.get('city')
+
+        return merged
 
     def _build_features(
         self,

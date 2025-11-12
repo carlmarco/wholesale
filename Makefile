@@ -1,4 +1,4 @@
-.PHONY: help setup start stop restart logs clean dashboard db-migrate db-upgrade test lint train-models scrape-data score-leads
+.PHONY: help setup start stop restart logs clean dashboard db-migrate db-upgrade test lint train-models scrape-data score-leads ingest-seeds enrich-seeds data-quality
 
 # Default target
 .DEFAULT_GOAL := help
@@ -144,6 +144,21 @@ score-leads: ## Run lead scoring on all properties
 
 pipeline-full: scrape-data load-data score-leads ## Run complete pipeline (scrape → load → score)
 	@echo "$(GREEN)✓ Full pipeline complete!$(NC)"
+
+ingest-seeds: ## Collect seeds from all ingestion sources
+	@echo "$(YELLOW)Collecting candidate seeds...$(NC)"
+	@.venv/bin/python -m src.wholesaler.ingestion.pipeline --sources tax_sales foreclosures code_violations --output data/processed/seeds.json
+	@echo "$(GREEN)✓ Seeds collected$(NC)"
+
+enrich-seeds: ingest-seeds ## Enrich collected seeds with violations + metadata
+	@echo "$(YELLOW)Enriching seed records...$(NC)"
+	@.venv/bin/python scripts/enrich_seeds.py
+	@echo "$(GREEN)✓ Enrichment complete$(NC)"
+
+data-quality: ## Compute basic data quality stats for the latest seeds
+	@echo "$(YELLOW)Computing data quality metrics...$(NC)"
+	@.venv/bin/python scripts/data_quality_report.py
+	@echo "$(GREEN)✓ Data quality report generated$(NC)"
 
 ##@ Machine Learning
 

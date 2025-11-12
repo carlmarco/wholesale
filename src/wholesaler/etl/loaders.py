@@ -18,6 +18,7 @@ from src.wholesaler.db.repository import (
     TaxSaleRepository,
     ForeclosureRepository,
     PropertyRecordRepository,
+    EnrichedSeedRepository,
     LeadScoreRepository,
     DataIngestionRunRepository,
 )
@@ -633,3 +634,140 @@ class LeadScoreLoader:
 
         logger.info("lead_scores_bulk_loaded", stats=stats)
         return stats
+
+
+class EnrichedSeedLoader:
+    """Load enriched seeds into database from parquet files."""
+
+    def __init__(self):
+        self.repository = EnrichedSeedRepository()
+        self.standardizer = AddressStandardizer()
+        logger.info("enriched_seed_loader_initialized")
+
+    def load_from_parquet(
+        self,
+        session: Session,
+        parquet_path: str,
+        track_run: bool = True
+    ) -> Dict[str, int]:
+        """
+        Load enriched seeds from parquet file.
+
+        Args:
+            session: Database session
+            parquet_path: Path to enriched_seeds.parquet file
+            track_run: Whether to track ingestion run
+
+        Returns:
+            Stats dict with counts
+        """
+        import pandas as pd
+        from pathlib import Path
+
+        if not Path(parquet_path).exists():
+            logger.error("parquet_file_not_found", path=parquet_path)
+            raise FileNotFoundError(f"Parquet file not found: {parquet_path}")
+
+        run_id = None
+        if track_run:
+            run_repo = DataIngestionRunRepository()
+            run = run_repo.create_run(session, 'enriched_seeds')
+            run_id = run.id
+
+        stats = {
+            'processed': 0,
+            'inserted': 0,
+            'updated': 0,
+            'failed': 0,
+        }
+
+        try:
+            # Read parquet file
+            df = pd.read_parquet(parquet_path)
+            logger.info("parquet_file_loaded", path=parquet_path, rows=len(df))
+
+            # Process each record
+            for idx, row in df.iterrows():
+                try:
+                    # Extract required fields
+                    parcel_id = row.get('parcel_id')
+                    seed_type = row.get('seed_type')
+
+                    if not parcel_id or not seed_type:
+                        logger.warning(
+                            "missing_required_fields",
+                            row_index=idx,
+                            parcel_id=parcel_id,
+                            seed_type=seed_type
+                        )
+                        stats['failed'] += 1
+                        continue
+
+                    # Normalize parcel ID
+                    parcel_id_normalized = self.standardizer.normalize_parcel_id(parcel_id)
+                    if not parcel_id_normalized:
+                        logger.warning(
+                            "cannot_normalize_parcel_id",
+                            row_index=idx,
+                            parcel_id=parcel_id
+                        )
+                        stats['failed'] += 1
+                        continue
+
+                    # Convert row to dict (handling NaN values)
+                    enriched_data = row.to_dict()
+                    # Replace NaN with None for JSON serialization
+                    enriched_data = {
+                        k: (None if pd.isna(v) else v)
+                        for k, v in enriched_data.items()
+                    }
+
+                    # Upsert to database
+                    self.repository.upsert(
+                        session,
+                        parcel_id_normalized=parcel_id_normalized,
+                        seed_type=seed_type,
+                        enriched_data=enriched_data
+                    )
+
+                    stats['processed'] += 1
+                    stats['inserted'] += 1  # Simplified - can't easily distinguish
+
+                except Exception as e:
+                    logger.error(
+                        "enriched_seed_load_failed",
+                        row_index=idx,
+                        parcel_id=row.get('parcel_id'),
+                        error=str(e)
+                    )
+                    stats['failed'] += 1
+
+            # Commit transaction
+            session.commit()
+
+            if track_run and run_id:
+                run_repo.complete_run(
+                    session,
+                    run_id,
+                    status='success' if stats['failed'] == 0 else 'partial',
+                    records_processed=stats['processed'],
+                    records_inserted=stats['inserted'],
+                    records_failed=stats['failed']
+                )
+
+            logger.info("enriched_seeds_loaded", stats=stats)
+            return stats
+
+        except Exception as e:
+            logger.error("parquet_load_failed", path=parquet_path, error=str(e))
+            session.rollback()
+
+            if track_run and run_id:
+                run_repo.complete_run(
+                    session,
+                    run_id,
+                    status='failure',
+                    error_message=str(e)
+                )
+
+            raise

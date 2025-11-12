@@ -8,6 +8,10 @@ from typing import Any
 
 from sqlalchemy import Boolean, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr
+from sqlalchemy import event
+from sqlalchemy.types import String, Text
+from geoalchemy2 import Geography
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 
 
@@ -111,3 +115,15 @@ def import_all_models():
     to ensure all models are discovered.
     """
     from src.wholesaler.db import models  # noqa: F401
+@event.listens_for(Base.metadata, "before_create")
+def adapt_special_columns(metadata, connection, **kwargs):
+    """Replace unsupported column types when using SQLite."""
+    if connection.engine.name != "sqlite":
+        return
+
+    for table in metadata.tables.values():
+        for column in table.columns:
+            if isinstance(column.type, Geography):
+                column.type = String(64)
+            elif isinstance(column.type, JSONB):
+                column.type = Text()

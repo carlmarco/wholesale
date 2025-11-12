@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-11-11T22:41:14.718247",
+  "checks": {
+    "legacy_database": {
+      "status": "FAIL",
+      "error": "(psycopg2.OperationalError) connection to server at \"localhost\" (::1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nconnection to server at \"localhost\" (127.0.0.1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\n\n(Background on this error at: https://sqlalche.me/e/20/e3q8)"
+    },
+    "seed_files": {
+      "status": "SKIP",
+      "message": "seeds.json not found - run: make ingest-seeds"
+    },
+    "enrichment_output": {
+      "status": "SKIP",
+      "message": "enriched_seeds.parquet not found - run: make enrich-seeds"
+    },
+    "database_schema": {
+      "status": "FAIL",
+      "error": "(psycopg2.OperationalError) connection to server at \"localhost\" (::1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nconnection to server at \"localhost\" (127.0.0.1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\n\n(Background on this error at: https://sqlalche.me/e/20/e3q8)"
+    },
+    "scoring_integration": {
+      "status": "FAIL",
+      "error": "(psycopg2.OperationalError) connection to server at \"localhost\" (::1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nconnection to server at \"localhost\" (127.0.0.1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\n\n(Background on this error at: https://sqlalche.me/e/20/e3q8)"
+    }
+  },
+  "warnings": [
+    "No seeds.json - need to run seed collection",
+    "No enriched_seeds.parquet - need to run enrichment"
+  ],
+  "errors": [
+    "Legacy database check failed: (psycopg2.OperationalError) connection to server at \"localhost\" (::1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nconnection to server at \"localhost\" (127.0.0.1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\n\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+    "Database schema check failed: (psycopg2.OperationalError) connection to server at \"localhost\" (::1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nconnection to server at \"localhost\" (127.0.0.1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\n\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+    "Scoring integration check failed: (psycopg2.OperationalError) connection to server at \"localhost\" (::1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nconnection to server at \"localhost\" (127.0.0.1), port 5432 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\n\n(Background on this error at: https://sqlalche.me/e/20/e3q8)"
+  ]
+}
