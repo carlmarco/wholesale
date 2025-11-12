@@ -92,9 +92,21 @@ class UnifiedEnrichmentPipeline:
         )
         summary = {}
         for _, row in grouped.iterrows():
+            # Handle most_recent date - could be string or datetime
+            most_recent_val = row["most_recent"]
+            if pd.notna(most_recent_val):
+                if isinstance(most_recent_val, str):
+                    # Already a string, extract just the date part
+                    most_recent = most_recent_val.split('T')[0] if 'T' in most_recent_val else most_recent_val
+                else:
+                    # datetime object, format it
+                    most_recent = most_recent_val.strftime("%Y-%m-%d")
+            else:
+                most_recent = None
+
             summary[row["parcel_id_normalized"]] = {
                 "count": int(row["count"]),
-                "most_recent": row["most_recent"].strftime("%Y-%m-%d") if pd.notna(row["most_recent"]) else None,
+                "most_recent": most_recent,
                 "types": row["types"],
             }
         return summary

@@ -9,7 +9,7 @@ from typing import Optional
 
 from sqlalchemy import (
     String, Integer, Numeric, Date, DateTime, Boolean, Text,
-    ForeignKey, CheckConstraint, UniqueConstraint, Index, Enum as SQLEnum
+    ForeignKey, CheckConstraint, UniqueConstraint, Index, Enum as SQLEnum, func
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
@@ -73,6 +73,13 @@ class Property(Base, TimestampMixin, SoftDeleteMixin):
         Numeric(10, 7),
         nullable=True,
         comment="Longitude"
+    )
+
+    # Seed tracking (for multi-source deduplication)
+    seed_type: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="Comma-separated list of seed types that identified this property"
     )
 
     # Relationships (1:1 with tax_sales, foreclosures, property_records, lead_scores)
@@ -585,7 +592,7 @@ class LeadScoreHistory(Base, TimestampMixin):
         return f"<LeadScoreHistory(parcel_id={self.parcel_id_normalized}, date={self.snapshot_date}, score={self.total_score})>"
 
 
-class EnrichedSeed(Base, TimestampMixin):
+class EnrichedSeed(Base):
     """Staging table for enriched seed records from UnifiedEnrichmentPipeline."""
     __tablename__ = "enriched_seeds"
 
@@ -620,6 +627,14 @@ class EnrichedSeed(Base, TimestampMixin):
         JSONB,
         nullable=True,
         comment="Full enriched record from UnifiedEnrichmentPipeline"
+    )
+
+    # Only created_at - no updated_at (matches migration schema)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        comment="When seed was enriched"
     )
 
     processed: Mapped[bool] = mapped_column(

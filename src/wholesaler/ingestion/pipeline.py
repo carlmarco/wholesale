@@ -45,7 +45,7 @@ class IngestionPipeline:
         return seeds
 
     def collect_foreclosure_seeds(self, limit: Optional[int] = None) -> List[SeedRecord]:
-        properties = self.foreclosure_scraper.fetch_properties(limit=limit)
+        properties = self.foreclosure_scraper.fetch_foreclosures(limit=limit)
         seeds: List[SeedRecord] = []
         for record in properties:
             seeds.append(
@@ -59,7 +59,12 @@ class IngestionPipeline:
         return seeds
 
     def collect_code_violation_seeds(self, limit: Optional[int] = None) -> List[SeedRecord]:
-        df = self.code_violation_scraper.fetch_violations(limit=limit)
+        # Filter for property-related violations only (exclude business licenses, tickets, etc.)
+        property_case_types = ['Z', 'LOT', 'H', 'SGN', 'ABT', 'TREE', 'POOL']
+        case_types_str = "', '".join(property_case_types)
+        where_clause = f"casetype IN ('{case_types_str}')"
+
+        df = self.code_violation_scraper.fetch_violations(limit=limit, where=where_clause)
         seeds: List[SeedRecord] = []
         if df.empty:
             logger.warning("code_violation_fetch_empty")
@@ -73,7 +78,7 @@ class IngestionPipeline:
                     source_payload=row.to_dict(),
                 )
             )
-        logger.info("code_violation_seeds_collected", count=len(seeds))
+        logger.info("code_violation_seeds_collected", count=len(seeds), case_types=property_case_types)
         return seeds
 
     def run(self, sources: Iterable[str], output_path: Optional[Path] = None, limit: Optional[int] = None) -> List[SeedRecord]:

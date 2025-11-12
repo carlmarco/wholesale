@@ -142,7 +142,7 @@ class SeedMerger:
         Updates stats dict in-place.
         """
         # Check if property already exists
-        existing_property = self.property_repo.get_by_parcel_id(
+        existing_property = self.property_repo.get_by_parcel(
             session,
             seed.parcel_id_normalized
         )
@@ -281,7 +281,7 @@ class SeedMerger:
 
         properties_by_seed = session.query(
             Property.seed_type,
-            func.count(Property.id)
+            func.count(Property.parcel_id_normalized)
         ).filter(
             Property.seed_type.isnot(None)
         ).group_by(Property.seed_type).all()

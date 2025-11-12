@@ -917,8 +917,7 @@ class EnrichedSeedRepository(BaseRepository):
             set_={
                 'violation_count': violation_count,
                 'most_recent_violation': most_recent_violation,
-                'enriched_data': stored_enriched,
-                'updated_at': datetime.now()
+                'enriched_data': stored_enriched
             }
         )
 

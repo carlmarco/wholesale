@@ -1,9 +1,13 @@
 """
 CLI helper to enrich collected seeds.
 """
+import sys
 from pathlib import Path
 import json
 import pandas as pd
+
+# Add parent directory to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.wholesaler.ingestion.seed_models import SeedRecord
 from src.wholesaler.pipelines.enrichment import UnifiedEnrichmentPipeline

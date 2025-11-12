@@ -714,13 +714,24 @@ class EnrichedSeedLoader:
                         stats['failed'] += 1
                         continue
 
-                    # Convert row to dict (handling NaN values)
-                    enriched_data = row.to_dict()
-                    # Replace NaN with None for JSON serialization
-                    enriched_data = {
-                        k: (None if pd.isna(v) else v)
-                        for k, v in enriched_data.items()
-                    }
+                    # Convert row to dict (handling NaN values and numpy types)
+                    import numpy as np
+                    enriched_data = {}
+                    for k, v in row.to_dict().items():
+                        # Handle numpy arrays
+                        if isinstance(v, np.ndarray):
+                            enriched_data[k] = v.tolist() if v.size > 0 else []
+                        # Handle pandas NA/NaN
+                        elif pd.isna(v):
+                            enriched_data[k] = None
+                        # Handle numpy scalars
+                        elif isinstance(v, (np.integer, np.floating)):
+                            enriched_data[k] = v.item()
+                        # Handle numpy bool
+                        elif isinstance(v, np.bool_):
+                            enriched_data[k] = bool(v)
+                        else:
+                            enriched_data[k] = v
 
                     # Upsert to database
                     self.repository.upsert(
