@@ -1,0 +1,2369 @@
+{
+  "stats": {
+    "total_leads": 50,
+    "tier_a_count": 0,
+    "tier_b_count": 0,
+    "tier_c_count": 50,
+    "tier_d_count": 0,
+    "recent_tier_a_count": 0,
+    "avg_score_tier_a": 0.0,
+    "total_properties": 50,
+    "properties_with_tax_sales": 0,
+    "properties_with_foreclosures": 0
+  },
+  "leads": [
+    {
+      "parcel_id_normalized": "292307313900001",
+      "total_score": 64.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 60.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:19:37.003040+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 60.0 (property value/equity)",
+        "Logistic probability 0.92",
+        "Priority: YES (score 75.5)",
+        "Legacy scorer comparison: 37.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $90",
+        "HIGH PRIORITY: Strong ML signals",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 901.0,
+          "repair_costs": 224400.0,
+          "end_buyer_price": -223769.3,
+          "acquisition_cost": 450.5,
+          "max_allowable_offer": -238769.3
+        },
+        "roi_percent": -99.72,
+        "is_profitable": false,
+        "projected_profit": -224219.8
+      },
+      "situs_address": "3301 S KIRKMAN RD",
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": "3301 S KIRKMAN RD",
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 901.0,
+        "year_built": 1999,
+        "living_area": 5610,
+        "lot_size": 22
+      }
+    },
+    {
+      "parcel_id_normalized": "302303893818000",
+      "total_score": 61.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 30.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:19:42.916814+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 30.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 49.1)",
+        "Legacy scorer comparison: 28.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $16,730",
+        "HIGH PRIORITY: Strong ML signals",
+        "ML tier recommendation: B"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 167300.0,
+          "repair_costs": 61950.0,
+          "end_buyer_price": 55160.0,
+          "acquisition_cost": 83650.0,
+          "max_allowable_offer": 40160.0
+        },
+        "roi_percent": -19.57,
+        "is_profitable": false,
+        "projected_profit": -28490.0
+      },
+      "situs_address": "1800 CARALEE BLVD BLDG F",
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": "1800 CARALEE BLVD BLDG F",
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 167300.0,
+        "year_built": 1973,
+        "living_area": 1239,
+        "lot_size": 0
+      }
+    },
+    {
+      "parcel_id_normalized": "292236087200030",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:45.635573+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.33",
+        "Priority: no (score 48.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302321003805000",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:45.660830+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.56",
+        "Priority: no (score 57.8)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292234778700010",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:45.861273+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.35",
+        "Priority: no (score 49.2)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302305183304241",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:46.027524+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.49",
+        "Priority: no (score 54.6)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292213066839010",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:46.029242+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.28",
+        "Priority: no (score 46.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292235377201030",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:46.106424+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.28",
+        "Priority: no (score 46.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302305085800510",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:46.490499+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302234070201060",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:46.775238+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.45",
+        "Priority: no (score 53.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292226310800181",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:47.049388+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.35",
+        "Priority: no (score 49.2)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292216584400263",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:47.089111+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292216805702080",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:48.065418+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292223160202030",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:48.093643+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.52",
+        "Priority: no (score 56.2)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292203262802040",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:48.210747+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.33",
+        "Priority: no (score 48.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292236087200110",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:48.914448+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.27",
+        "Priority: no (score 45.9)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302233570414090",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:49.018265+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292213278001000",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:49.186880+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 1.00",
+        "Priority: YES (score 75.2)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "282301557900101",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:49.517350+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.39",
+        "Priority: no (score 50.7)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "282301557800101",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:49.519011+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.39",
+        "Priority: no (score 50.7)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292226729600030",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:49.736802+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.37",
+        "Priority: no (score 50.0)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "312318201302280",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:49.874888+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.27",
+        "Priority: no (score 45.9)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292213768000090",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:49.898289+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292319284100010",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:49.963372+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.37",
+        "Priority: no (score 50.0)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302231158801051",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:50.073835+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.28",
+        "Priority: no (score 46.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302304315002000",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:50.234577+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.43",
+        "Priority: no (score 52.3)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292301232403040",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:50.236143+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.41",
+        "Priority: no (score 51.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292329386200101",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:50.285820+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.33",
+        "Priority: no (score 48.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292220000000012",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:50.879043+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.28",
+        "Priority: no (score 46.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292228460004080",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:50.885884+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292228120401000",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:50.939800+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.35",
+        "Priority: no (score 49.2)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292217641800290",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:50.965985+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292236087200120",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:51.219722+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.28",
+        "Priority: no (score 46.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "282301561003000",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:51.629017+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.52",
+        "Priority: no (score 56.2)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "312430470001000",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:51.671353+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.35",
+        "Priority: no (score 49.2)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292223300801010",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:51.915873+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.33",
+        "Priority: no (score 48.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292208775200010",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:51.944170+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302306625700180",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:51.997928+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.31",
+        "Priority: no (score 47.8)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292305739803140",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:52.076063+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "282236285700001",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:52.081731+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.30",
+        "Priority: no (score 47.1)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302233216003070",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:52.107344+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.31",
+        "Priority: no (score 47.8)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "282236562100020",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:52.335906+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.33",
+        "Priority: no (score 48.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "302230303600263",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:52.347564+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.33",
+        "Priority: no (score 48.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292301454800592",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:52.463444+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.50",
+        "Priority: no (score 55.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292225153604010",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:52.727866+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.35",
+        "Priority: no (score 49.2)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292307111300010",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:52.825506+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.33",
+        "Priority: no (score 48.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292216805701110",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:52.922254+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.37",
+        "Priority: no (score 50.0)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292232182800070",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:53.017472+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.33",
+        "Priority: no (score 48.5)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292236722805012",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:53.183915+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.31",
+        "Priority: no (score 47.8)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    },
+    {
+      "parcel_id_normalized": "292224356026092",
+      "total_score": 58.75,
+      "tier": "C",
+      "distress_score": 100.0,
+      "value_score": 0.0,
+      "location_score": 25.0,
+      "urgency_score": 0.0,
+      "profitability_score": 0.0,
+      "scored_at": "2025-11-19T16:18:53.207335+00:00",
+      "reasons": [
+        "Distress: 100.0 (violations \u00d7 enhanced multipliers)",
+        "Disposition: 25.0 (seed type: code_violation)",
+        "Equity: 0.0 (property value/equity)",
+        "Logistic probability 0.31",
+        "Priority: no (score 47.8)",
+        "Legacy scorer comparison: 10.0",
+        "Heuristic probability (no model): 70.00%",
+        "Heuristic expected return: $10,000",
+        "ML tier recommendation: C"
+      ],
+      "profitability_details": {
+        "details": {
+          "arv": 0.0,
+          "repair_costs": 60000.0,
+          "end_buyer_price": -60000.0,
+          "acquisition_cost": 0.0,
+          "max_allowable_offer": -75000.0
+        },
+        "roi_percent": -100.0,
+        "is_profitable": false,
+        "projected_profit": -60000.0
+      },
+      "situs_address": null,
+      "city": null,
+      "zip_code": null,
+      "property": {
+        "situs_address": null,
+        "city": null,
+        "zip_code": null,
+        "owner_name": "Unknown",
+        "total_market_value": 0.0,
+        "year_built": null,
+        "living_area": null,
+        "lot_size": null
+      }
+    }
+  ],
+  "generated_at": "2025-11-19T15:13:47.763929"
+}

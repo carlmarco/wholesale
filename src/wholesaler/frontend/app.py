@@ -23,7 +23,20 @@ st.set_page_config(
 
 # Initialize API client in session state
 if "api_client" not in st.session_state:
-    st.session_state.api_client = APIClient()
+    # Check if running in demo mode
+    is_demo = False
+    try:
+        if st.secrets.get("DEMO_MODE", False):
+            is_demo = True
+    except (FileNotFoundError, KeyError):
+        pass
+
+    if is_demo:
+        from src.wholesaler.frontend.utils.mock_api_client import MockAPIClient
+        st.session_state.api_client = MockAPIClient()
+        st.toast("Running in Demo Mode", icon="ℹ️")
+    else:
+        st.session_state.api_client = APIClient()
 
 # Custom CSS
 st.markdown("""
