@@ -23,6 +23,7 @@ dependencies:
     - alembic>=1.13.0
     - GeoAlchemy2>=0.15.0
     - SQLAlchemy-Utils>=0.42.0
+    - pyproj>=3.6.0
     - apache-airflow>=2.8.0
     - fastapi>=0.100.0
     - uvicorn[standard]>=0.30.0

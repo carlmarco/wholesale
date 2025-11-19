@@ -21,6 +21,7 @@ psycopg2-binary>=2.9.0
 alembic>=1.13.0
 GeoAlchemy2>=0.15.0
 SQLAlchemy-Utils>=0.42.0
+pyproj>=3.6.0
 
 # Workflow orchestration (Phase 2)
 apache-airflow>=2.8.0
