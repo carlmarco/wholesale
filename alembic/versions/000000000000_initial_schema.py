@@ -20,6 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Enable PostGIS extension
+    op.execute("CREATE EXTENSION IF NOT EXISTS postgis")
+
     # Create properties table
     op.create_table(
         'properties',

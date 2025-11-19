@@ -1,5 +1,0 @@
-libpq-dev
-libgdal-dev
-libgeos-dev
-proj-bin
-build-essential
