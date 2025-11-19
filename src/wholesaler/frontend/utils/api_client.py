@@ -9,7 +9,38 @@ from datetime import datetime
 
 import requests
 
-DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+# Try to import streamlit for secrets support (will fail in non-Streamlit environments)
+try:
+    import streamlit as st
+    HAS_STREAMLIT = True
+except ImportError:
+    HAS_STREAMLIT = False
+
+
+def get_api_base_url() -> str:
+    """
+    Get API base URL from Streamlit secrets, environment variable, or default.
+
+    Priority:
+    1. Streamlit secrets (for Streamlit Cloud deployment)
+    2. Environment variable API_BASE_URL
+    3. Default localhost
+
+    Returns:
+        API base URL
+    """
+    if HAS_STREAMLIT:
+        try:
+            # Try to get from Streamlit secrets first
+            return st.secrets.get("API_BASE_URL", os.getenv("API_BASE_URL", "http://localhost:8000"))
+        except (FileNotFoundError, KeyError):
+            # Secrets not configured, fall back to environment variable
+            pass
+
+    return os.getenv("API_BASE_URL", "http://localhost:8000")
+
+
+DEFAULT_API_BASE_URL = get_api_base_url()
 
 
 class APIClient:

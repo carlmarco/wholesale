@@ -90,3 +90,4 @@ alembic/versions/__pycache__/
 data/processed/*.json
 data/processed/*.parquet
 data/processed/*.csv
+.streamlit/secrets.toml
