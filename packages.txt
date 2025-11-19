@@ -1,13 +1,5 @@
-# System-level dependencies for Streamlit Cloud
-# These packages are installed via apt-get before Python dependencies
-
-# PostgreSQL client libraries (for psycopg2)
 libpq-dev
-
-# GDAL/GEOS for geospatial operations (pyproj)
 libgdal-dev
 libgeos-dev
 proj-bin
-
-# Common build tools
 build-essential
