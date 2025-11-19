@@ -118,6 +118,73 @@ if parcel_id:
                 value=f"{lead['urgency_score']:.1f}",
             )
 
+        # Hybrid / priority metrics
+        if lead.get("hybrid_score") is not None or lead.get("priority_score") is not None:
+            st.subheader(" Hybrid & ML Signals")
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                if lead.get("hybrid_score") is not None:
+                    st.metric("Hybrid Score", f"{lead['hybrid_score']:.1f}", help="Bucketed score from hybrid rules")
+                if lead.get("hybrid_tier"):
+                    st.metric("Hybrid Tier", lead["hybrid_tier"])
+
+            with col2:
+                if lead.get("logistic_probability") is not None:
+                    st.metric(
+                        "Sell Probability",
+                        f"{lead['logistic_probability']*100:.1f}%",
+                        help="Logistic opportunity model",
+                    )
+
+            with col3:
+                if lead.get("priority_score") is not None:
+                    st.metric("Priority Score", f"{lead['priority_score']:.1f}")
+
+        # Profitability Section (Phase 3.6)
+        if lead.get("profitability_details") or lead.get("profitability_score"):
+            st.subheader("💰 Profitability Analysis")
+            p_col1, p_col2, p_col3, p_col4 = st.columns(4)
+            
+            details = lead.get("profitability_details") or {}
+            
+            with p_col1:
+                if lead.get("profitability_score"):
+                    st.metric("Profitability Score", f"{lead['profitability_score']:.1f}")
+            
+            with p_col2:
+                if "projected_profit" in details:
+                    st.metric("Projected Profit", f"${details['projected_profit']:,.2f}")
+                    
+            with p_col3:
+                if "roi_percent" in details:
+                    st.metric("Est. ROI", f"{details['roi_percent']:.1f}%")
+                    
+            with p_col4:
+                if "is_profitable" in details:
+                    is_prof = details["is_profitable"]
+                    st.metric("Buy Box", "✅ PASS" if is_prof else "❌ FAIL")
+
+        # ML Risk Section (Phase 3.7)
+        if lead.get("ml_risk_score") is not None:
+            st.subheader("🤖 Label-Free ML Risk")
+            ml_col1, ml_col2, ml_col3, ml_col4 = st.columns(4)
+            
+            with ml_col1:
+                st.metric("Composite Risk", f"{lead['ml_risk_score']:.4f}")
+                
+            with ml_col2:
+                if lead.get("ml_risk_tier"):
+                    st.metric("Risk Tier", lead["ml_risk_tier"])
+                    
+            with ml_col3:
+                if lead.get("ml_cluster_id") is not None:
+                    st.metric("Cluster ID", str(lead["ml_cluster_id"]))
+                    
+            with ml_col4:
+                if lead.get("ml_anomaly_score") is not None:
+                    st.metric("Anomaly Score", f"{lead['ml_anomaly_score']:.4f}")
+
         # Score breakdown chart
         fig = create_score_breakdown_chart(lead)
         st.plotly_chart(fig, use_container_width=True)

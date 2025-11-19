@@ -12,14 +12,19 @@ Schedule: Daily at 3:00 AM (runs after daily_property_ingestion)
 """
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import List
+import json
+
+import pandas as pd
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
 
 from src.wholesaler.db import get_db_session
+from src.wholesaler.enrichment import UnifiedEnrichmentPipeline
+from src.wholesaler.ingestion.seed_models import SeedRecord
 from src.wholesaler.etl.loaders import EnrichedSeedLoader
 from src.wholesaler.etl.seed_merger import SeedMerger
-from src.wholesaler.pipelines.lead_scoring import LeadScorer
+from src.wholesaler.scoring import LeadScorer
 from src.wholesaler.db.repository import EnrichedSeedRepository, LeadScoreRepository
 from src.wholesaler.utils.logger import get_logger
 
@@ -79,7 +84,8 @@ def enrich_seeds(**context):
     """
     Step 2: Enrich seeds with property records and code violations.
 
-    Runs UnifiedEnrichmentPipeline to enrich all seeds.
+    Runs UnifiedEnrichmentPipeline to enrich the collected seeds and writes
+    `enriched_seeds.parquet` used by downstream loaders.
 
     Returns:
         Dict with enrichment stats
@@ -87,16 +93,47 @@ def enrich_seeds(**context):
     logger.info("seed_enrichment_started")
 
     try:
-        from src.wholesaler.pipelines.enrichment import UnifiedEnrichmentPipeline
+        if not SEEDS_FILE.exists():
+            raise FileNotFoundError(f"{SEEDS_FILE} not found. Run seed collection first.")
+
+        seeds_raw = json.loads(SEEDS_FILE.read_text())
+        if not isinstance(seeds_raw, list):
+            raise ValueError("Seeds JSON must be a list of records.")
+
+        seeds: List[SeedRecord] = []
+        skipped = 0
+        for item in seeds_raw:
+            seed_type = item.get("seed_type")
+            if not seed_type:
+                skipped += 1
+                continue
+            seeds.append(
+                SeedRecord(
+                    parcel_id=item.get("parcel_id"),
+                    seed_type=seed_type,
+                    source_payload=item.get("source_payload") or {},
+                )
+            )
+
+        if not seeds:
+            raise ValueError("No valid seeds to enrich.")
 
         # Initialize pipeline
-        pipeline = UnifiedEnrichmentPipeline()
-
-        # Enrich seeds (reads seeds.json, writes enriched_seeds.parquet)
-        stats = pipeline.run(
-            seeds_path=str(SEEDS_FILE),
-            output_path=str(ENRICHED_SEEDS_FILE)
+        pipeline = UnifiedEnrichmentPipeline(
+            enable_geo=True,
+            geo_csv_path=str(DATA_DIR / "code_enforcement_data.csv"),
         )
+
+        enriched = pipeline.run(seeds)
+        df = pd.DataFrame(enriched)
+        ENRICHED_SEEDS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(ENRICHED_SEEDS_FILE, index=False)
+
+        stats = {
+            'records': len(enriched),
+            'output_path': str(ENRICHED_SEEDS_FILE),
+            'skipped': skipped,
+        }
 
         logger.info("seed_enrichment_completed", stats=stats)
 
@@ -288,8 +325,8 @@ with DAG(
     'seed_based_ingestion',
     default_args=default_args,
     description='Hybrid seed ingestion pipeline for tax sales, code violations, and foreclosures',
-    schedule_interval='0 3 * * *',  # Daily at 3:00 AM
-    start_date=days_ago(1),
+    schedule='0 3 * * *',  # Daily at 3:00 AM
+    start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['ingestion', 'seeds', 'hybrid'],
 ) as dag:
@@ -298,35 +335,30 @@ with DAG(
     collect_seeds_task = PythonOperator(
         task_id='collect_seeds',
         python_callable=collect_seeds,
-        provide_context=True,
     )
 
     # Task 2: Enrich seeds
     enrich_seeds_task = PythonOperator(
         task_id='enrich_seeds',
         python_callable=enrich_seeds,
-        provide_context=True,
     )
 
     # Task 3: Load to database
     load_to_db_task = PythonOperator(
         task_id='load_enriched_seeds',
         python_callable=load_enriched_seeds_to_db,
-        provide_context=True,
     )
 
     # Task 4: Merge to properties
     merge_seeds_task = PythonOperator(
         task_id='merge_seeds_to_properties',
         python_callable=merge_seeds_to_properties,
-        provide_context=True,
     )
 
     # Task 5: Score new properties
     score_properties_task = PythonOperator(
         task_id='score_seed_properties',
         python_callable=score_seed_based_properties,
-        provide_context=True,
     )
 
     # Define task dependencies

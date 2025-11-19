@@ -18,6 +18,10 @@ Dashboard will be available at **http://localhost:8501**
 
 For all available commands, run `make help`
 
+> **Note:** The Streamlit dashboard reads the FastAPI endpoint from the `API_BASE_URL` environment variable.  
+> - Local development defaults to `http://localhost:8000`.  
+> - Inside Docker (compose), it should be set to `http://api:8000` so the container can reach the API service.
+
 ## Project Goal
 
 Identify profitable wholesale opportunities where:
@@ -206,6 +210,9 @@ make scrape-data       # Download fresh data from APIs
 make load-data         # Load data into database
 make score-leads       # Run lead scoring
 make pipeline-full     # Run complete pipeline
+make ingest-seeds      # Collect hybrid seed pools (tax sales, foreclosures, violations)
+make enrich-seeds      # Enrich seeds, write parquet, and load staging tables
+make load-enriched-seeds # Reload enriched_seeds.parquet into the database
 
 # Machine Learning
 make train-models      # Train ARV and lead models
@@ -269,6 +276,35 @@ scraper = PropertyScraper()
 property = scraper.fetch_by_parcel("123456789012345")
 ```
 
+### Seed-Based Enrichment Pipeline
+
+```bash
+# Step 1: collect fresh seeds from every ingestion source
+make ingest-seeds
+
+# Step 2: enrich seeds (includes geo proximity metrics), write parquet, and load staging tables
+make enrich-seeds
+
+# (Optional) Reload an existing parquet without re-enriching
+make load-enriched-seeds
+```
+
+The enrichment CLI mirrors the Airflow DAG. You can run it manually for custom scenarios:
+
+```bash
+.venv/bin/python scripts/enrich_seeds.py \
+  --seeds-path data/processed/seeds.json \
+  --output data/processed/enriched_seeds.parquet \
+  --geo-csv data/code_enforcement_data.csv \
+  --geo-radius 0.5 \
+  --load
+```
+
+Flags:
+- `--load`: immediately push the parquet rows into `enriched_seeds`, `properties`, `tax_sales`, and `foreclosures`.
+- `--disable-geo`: opt-out of geo proximity metrics (enabled by default). Override data/radius with `--geo-csv` / `--geo-radius`.
+- `--output` / `--seeds-path`: customize file locations if you are testing alternate datasets.
+
 ### Geographic Enrichment
 
 ```python
@@ -301,6 +337,18 @@ ranked_leads = scorer.rank_leads(scored_leads)
 # Top tier A leads
 tier_a_leads = [lead for lead in ranked_leads if lead[1].tier == "A"]
 ```
+
+### Priority Leads API
+
+The API exposes an additional endpoint that surfaces high-probability leads using the new hybrid/logistic scoring blend:
+
+```
+GET /api/v1/leads/priority?limit=50
+```
+
+Each item includes `priority_score`, the hybrid tier, and logistic probability so the dashboard/team can focus on the most actionable properties even when legacy tiers remain low.
+
+The Streamlit dashboard also includes a **Priority Leads** tab that surfaces the same data with download support.
 
 ## Testing
 

@@ -8,7 +8,6 @@ Schedule: Daily at 6:00 AM (after all ETL processes complete)
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
 
 from dags.utils.notifications import (
     send_slack_notification,
@@ -371,8 +370,8 @@ with DAG(
     'data_quality_checks',
     default_args=default_args,
     description='Daily data quality validation and integrity checks',
-    schedule_interval='0 6 * * *',  # 6:00 AM daily (after all ETL processes)
-    start_date=days_ago(1),
+    schedule='0 6 * * *',  # 6:00 AM daily (after all ETL processes)
+    start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['quality', 'validation', 'monitoring'],
 ) as dag:
@@ -381,49 +380,42 @@ with DAG(
     check_db_stats_task = PythonOperator(
         task_id='check_db_stats',
         python_callable=check_database_statistics,
-        provide_context=True,
     )
 
     # Task 2: Check data completeness
     check_completeness_task = PythonOperator(
         task_id='check_completeness',
         python_callable=check_data_completeness,
-        provide_context=True,
     )
 
     # Task 3: Check data consistency
     check_consistency_task = PythonOperator(
         task_id='check_consistency',
         python_callable=check_data_consistency,
-        provide_context=True,
     )
 
     # Task 4: Check PostGIS functionality
     check_postgis_task = PythonOperator(
         task_id='check_postgis',
         python_callable=check_postgis_functionality,
-        provide_context=True,
     )
 
     # Task 5: Generate quality report
     generate_report_task = PythonOperator(
         task_id='generate_report',
         python_callable=generate_quality_report,
-        provide_context=True,
     )
 
     # Task 6: Send alerts if issues found
     send_alerts_task = PythonOperator(
         task_id='send_alerts',
         python_callable=send_quality_alerts,
-        provide_context=True,
     )
 
     # Task 7: Log summary
     log_summary_task = PythonOperator(
         task_id='log_summary',
         python_callable=log_quality_summary,
-        provide_context=True,
     )
 
     # Define dependencies

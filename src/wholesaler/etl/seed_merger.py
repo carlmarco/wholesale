@@ -4,6 +4,7 @@ Seed Merger
 Merges enriched seeds from staging table into main properties table.
 Handles multi-source deduplication and seed_type tracking.
 """
+import json
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
@@ -148,7 +149,7 @@ class SeedMerger:
         )
 
         # Extract relevant data from enriched_data
-        enriched_data = seed.enriched_data or {}
+        enriched_data = self._deserialize_enriched_data(seed)
 
         if existing_property:
             # Update existing property
@@ -250,7 +251,7 @@ class SeedMerger:
 
         property_data = {
             'parcel_id_normalized': seed.parcel_id_normalized,
-            'parcel_id_original': enriched_data.get('parcel_id', seed.parcel_id_normalized),
+            'parcel_id_original': enriched_data.get('parcel_id') or seed.parcel_id_normalized,
             'seed_type': seed.seed_type,
             'situs_address': situs_address,
             'city': city,
@@ -292,3 +293,18 @@ class SeedMerger:
                 seed_type: count for seed_type, count in properties_by_seed
             }
         }
+
+    @staticmethod
+    def _deserialize_enriched_data(seed: EnrichedSeed) -> Dict[str, Any]:
+        data = seed.enriched_data or {}
+        if isinstance(data, str):
+            try:
+                return json.loads(data)
+            except json.JSONDecodeError:
+                logger.warning(
+                    "seed_json_decode_failed",
+                    seed_id=seed.id,
+                    parcel_id=seed.parcel_id_normalized
+                )
+                return {}
+        return data

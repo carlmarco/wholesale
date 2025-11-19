@@ -63,6 +63,7 @@ class ForeclosureScraper:
             "outFields": "*",
             "outSR": 4326,
             "f": "json",
+            "orderByFields": "AUCTION_DATE DESC",
             "returnGeometry": "true"
         }
 

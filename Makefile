@@ -1,4 +1,4 @@
-.PHONY: help setup start stop restart logs clean dashboard db-migrate db-upgrade test lint train-models scrape-data score-leads ingest-seeds enrich-seeds data-quality
+.PHONY: help setup start stop restart logs clean dashboard db-migrate db-upgrade test lint train-models scrape-data score-leads ingest-seeds enrich-seeds load-enriched-seeds data-quality
 
 # Default target
 .DEFAULT_GOAL := help
@@ -89,7 +89,7 @@ dashboard: ## Launch the dashboard (builds and starts all services)
 
 dashboard-dev: ## Run dashboard in development mode (hot reload)
 	@echo "$(GREEN)Starting dashboard in development mode...$(NC)"
-	@.venv/bin/streamlit run src/wholesaler/dashboard/app.py --server.port=8501
+	@.venv/bin/streamlit run src/wholesaler/frontend/app.py --server.port=8501
 
 ##@ Database
 
@@ -142,7 +142,12 @@ score-leads: ## Run lead scoring on all properties
 	@.venv/bin/python scripts/run_lead_scoring.py
 	@echo "$(GREEN)✓ Lead scoring complete$(NC)"
 
-pipeline-full: scrape-data load-data score-leads ## Run complete pipeline (scrape → load → score)
+score-ml: ## Run ML batch scoring (clustering, anomalies, risk)
+	@echo "$(YELLOW)Running ML batch scoring...$(NC)"
+	@.venv/bin/python scripts/run_batch_scoring.py
+	@echo "$(GREEN)✓ ML scoring complete$(NC)"
+
+pipeline-full: scrape-data load-data enrich-seeds score-leads score-ml ## Run complete pipeline (scrape → load → enrich → score → ml)
 	@echo "$(GREEN)✓ Full pipeline complete!$(NC)"
 
 ingest-seeds: ## Collect seeds from all ingestion sources
@@ -150,10 +155,15 @@ ingest-seeds: ## Collect seeds from all ingestion sources
 	@.venv/bin/python -m src.wholesaler.ingestion.pipeline --sources tax_sales foreclosures code_violations --output data/processed/seeds.json
 	@echo "$(GREEN)✓ Seeds collected$(NC)"
 
-enrich-seeds: ingest-seeds ## Enrich collected seeds with violations + metadata
+enrich-seeds: ingest-seeds ## Enrich collected seeds, write parquet, and load into the DB
 	@echo "$(YELLOW)Enriching seed records...$(NC)"
-	@.venv/bin/python scripts/enrich_seeds.py
-	@echo "$(GREEN)✓ Enrichment complete$(NC)"
+	@.venv/bin/python scripts/enrich_seeds.py --load
+	@echo "$(GREEN)✓ Enrichment + load complete$(NC)"
+
+load-enriched-seeds: ## Load previously generated enriched_seeds.parquet into the DB
+	@echo "$(YELLOW)Loading enriched seeds into database...$(NC)"
+	@.venv/bin/python scripts/load_enriched_seeds.py
+	@echo "$(GREEN)✓ Enriched seeds loaded$(NC)"
 
 data-quality: ## Compute basic data quality stats for the latest seeds
 	@echo "$(YELLOW)Computing data quality metrics...$(NC)"

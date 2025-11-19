@@ -2,7 +2,18 @@
 ML Feature Builder
 
 Responsible for extracting training datasets from the operational database.
+
+.. deprecated:: 2025-11
+    The direct table access methods (build_arv_dataset, build_lead_dataset) are deprecated.
+    Use FeatureStoreBuilder from src.wholesaler.ml.features.feature_store instead, which
+    provides a centralized feature store with proper normalization and temporal features.
+
+Migration path:
+    - build_arv_dataset() -> FeatureStoreBuilder.build_feature_dataframe()
+    - build_lead_dataset() -> FeatureStoreBuilder.build_feature_dataframe()
+    - Direct to ML models -> Use HybridMLScorer for inference
 """
+import warnings
 from typing import Optional, Tuple
 
 import pandas as pd
@@ -33,6 +44,35 @@ class FeatureBuilder:
         self.foreclosure_repo = ForeclosureRepository()
         self.lead_repo = LeadScoreRepository()
 
+    def build_from_feature_store(
+        self,
+        session: Optional[Session] = None,
+    ) -> pd.DataFrame:
+        """
+        Build training dataset using the new centralized FeatureStoreBuilder.
+
+        This is the recommended method for ML training datasets.
+
+        Returns:
+            pandas DataFrame with ML-ready features from enriched seeds.
+        """
+        from src.wholesaler.ml.features.feature_store import FeatureStoreBuilder
+
+        owned_session = False
+        if session is None:
+            session_ctx = get_db_session()
+            session = session_ctx.__enter__()
+            owned_session = True
+
+        try:
+            builder = FeatureStoreBuilder(session)
+            df = builder.build_feature_dataframe()
+            logger.info("feature_store_dataset_built", rows=len(df))
+            return df
+        finally:
+            if owned_session:
+                session_ctx.__exit__(None, None, None)
+
     def build_arv_dataset(
         self,
         session: Optional[Session] = None,
@@ -41,7 +81,15 @@ class FeatureBuilder:
     ) -> pd.DataFrame:
         """
         Build features for ARV regression using property records and related data.
+
+        .. deprecated:: 2025-11
+            Use build_from_feature_store() instead.
         """
+        warnings.warn(
+            "build_arv_dataset is deprecated. Use build_from_feature_store() for centralized features.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         owned_session = False
         if session is None:
             session_ctx = get_db_session()
@@ -107,6 +155,9 @@ class FeatureBuilder:
         """
         Build lead qualification dataset using current scores and property attributes.
 
+        .. deprecated:: 2025-11
+            Use build_from_feature_store() instead.
+
         Args:
             session: Optional SQLAlchemy session
             recent_days: Filter to leads scored within N days
@@ -114,6 +165,11 @@ class FeatureBuilder:
         Returns:
             pandas DataFrame with features and binary target (tier A vs others)
         """
+        warnings.warn(
+            "build_lead_dataset is deprecated. Use build_from_feature_store() for centralized features.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         owned_session = False
         if session is None:
             session_ctx = get_db_session()

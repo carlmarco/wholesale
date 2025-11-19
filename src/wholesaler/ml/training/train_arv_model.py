@@ -3,8 +3,18 @@ ARV Model Training Script
 
 Builds a regression model to estimate After Repair Value (ARV)
 using features extracted from the operational database.
+
+.. deprecated:: 2025-11
+    This module is deprecated. ARV prediction can now be derived from the centralized
+    FeatureStoreBuilder which includes market value features. Consider using:
+    - train_sale_probability.py for probability/expected return models
+    - train_distress_classifier.py for distress classification
+
+    The new modules provide better integration with the enriched seed pipeline
+    and centralized feature management.
 """
 import argparse
+import warnings
 from pathlib import Path
 
 import joblib
@@ -17,6 +27,12 @@ from src.wholesaler.ml.training.feature_builder import FeatureBuilder
 from src.wholesaler.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+warnings.warn(
+    "train_arv_model.py is deprecated. Consider train_sale_probability.py or the centralized FeatureStoreBuilder.",
+    DeprecationWarning,
+    stacklevel=1,
+)
 
 
 def train_arv_model(

@@ -104,15 +104,15 @@ async def get_property_analysis(
         parcel_id=parcel_id,
         city=lead.property.city or "Orlando",
         zip_code=lead.property.zip_code,
-        property_use=lead.property.property_use,
-        total_score=lead.total_score,
-        distress_score=lead.distress_score,
-        value_score=lead.value_score,
-        location_score=lead.location_score,
+        property_use=lead.property.foreclosure.property_type if lead.property.foreclosure else "Single Family",
+        total_score=float(lead.total_score or 0.0),
+        distress_score=float(lead.distress_score or 0.0),
+        value_score=float(lead.value_score or 0.0),
+        location_score=float(lead.location_score or 0.0),
         has_tax_sale=tax_sale is not None,
         has_foreclosure=foreclosure is not None,
-        tax_sale_opening_bid=tax_sale.opening_bid if tax_sale else None,
-        foreclosure_judgment=foreclosure.judgment_amount if foreclosure else None,
+        tax_sale_opening_bid=float(tax_sale.opening_bid) if tax_sale and tax_sale.opening_bid else None,
+        foreclosure_judgment=float(foreclosure.default_amount) if foreclosure and foreclosure.default_amount else None,
     )
 
     # Get ML analysis
@@ -162,8 +162,8 @@ async def get_arv_estimate(
         parcel_id=parcel_id,
         city=lead.property.city or "Orlando",
         zip_code=lead.property.zip_code,
-        property_use=lead.property.property_use,
-        location_score=lead.location_score,
+        property_use=lead.property.foreclosure.property_type if lead.property.foreclosure else "Single Family",
+        location_score=float(lead.location_score or 0.0),
     )
 
     result = estimate_arv(features)
@@ -215,7 +215,7 @@ async def get_repair_cost_estimate(
     features = PropertyFeatures(
         parcel_id=parcel_id,
         city=lead.property.city or "Orlando",
-        distress_score=lead.distress_score,
+        distress_score=float(lead.distress_score or 0.0),
         has_tax_sale=has_tax_sale,
         has_foreclosure=has_foreclosure,
     )

@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from src.wholesaler.api.dependencies import get_db
 from src.wholesaler.api.schemas import HealthCheck
-from src.wholesaler.api.routers import leads, properties, stats, auth, analysis
+from src.wholesaler.api.routers import leads, properties, stats, auth, analysis, predictions
 from src.wholesaler.api.cache import get_cache_stats
 
 # Create FastAPI app
@@ -38,6 +38,7 @@ app.include_router(leads.router)
 app.include_router(properties.router)
 app.include_router(stats.router)
 app.include_router(analysis.router)
+app.include_router(predictions.router)
 
 
 @app.get("/health", response_model=HealthCheck, tags=["health"])

@@ -5,7 +5,7 @@ Tests LeadScorer extensions for hybrid seed ingestion.
 """
 import pytest
 
-from src.wholesaler.pipelines.lead_scoring import LeadScorer
+from src.wholesaler.scoring import LeadScorer
 
 
 @pytest.fixture

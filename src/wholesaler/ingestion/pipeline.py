@@ -71,11 +71,23 @@ class IngestionPipeline:
             return seeds
 
         for _, row in df.iterrows():
+            # Convert to dict and ensure native Python types (no numpy)
+            payload = row.to_dict()
+            # Quick hack to sanitize numpy types: round-trip through JSON
+            # Or better: iterate and convert.
+            # row.to_dict() usually keeps numpy types.
+            # Let's use json.loads(row.to_json()) which forces conversion.
+            try:
+                payload = json.loads(row.to_json())
+            except Exception:
+                # Fallback if to_json fails (unlikely for simple DF)
+                payload = row.to_dict()
+
             seeds.append(
                 SeedRecord(
                     parcel_id=row.get("parcel_id"),
                     seed_type="code_violation",
-                    source_payload=row.to_dict(),
+                    source_payload=payload,
                 )
             )
         logger.info("code_violation_seeds_collected", count=len(seeds), case_types=property_case_types)

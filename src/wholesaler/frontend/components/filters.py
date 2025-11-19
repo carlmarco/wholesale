@@ -47,6 +47,18 @@ def render_lead_filters() -> Dict[str, Any]:
     if zip_code:
         filters["zip_code"] = zip_code
 
+    # View toggle
+    st.sidebar.subheader("Scoring View")
+    view_option = st.sidebar.radio(
+        "Select score view",
+        options=[
+            "Hybrid + Priority (recommended)",
+            "Legacy heuristic only",
+        ],
+        index=0,
+    )
+    filters["view"] = "hybrid" if view_option.startswith("Hybrid") else "legacy"
+
     # Sort options
     st.sidebar.subheader("Sort By")
     sort_options = {

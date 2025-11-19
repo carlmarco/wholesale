@@ -9,7 +9,6 @@ from datetime import datetime, timedelta, date
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
-from airflow.utils.dates import days_ago
 
 from dags.utils.notifications import (
     send_slack_notification,
@@ -258,8 +257,8 @@ with DAG(
     'tier_a_alert_notifications',
     default_args=default_args,
     description='Send alerts for new Tier A leads',
-    schedule_interval='0 5 * * *',  # 5:00 AM daily (1 hour after scoring)
-    start_date=days_ago(1),
+    schedule='0 5 * * *',  # 5:00 AM daily (1 hour after scoring)
+    start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['alerts', 'notifications', 'leads', 'tier-a'],
 ) as dag:
@@ -277,42 +276,36 @@ with DAG(
     fetch_tier_a_task = PythonOperator(
         task_id='fetch_tier_a_leads',
         python_callable=fetch_tier_a_leads,
-        provide_context=True,
     )
 
     # Task 2: Identify new Tier A leads
     identify_new_leads_task = PythonOperator(
         task_id='identify_new_leads',
         python_callable=identify_new_tier_a_leads,
-        provide_context=True,
     )
 
     # Task 3: Send Slack alerts (runs in parallel with email)
     send_slack_task = PythonOperator(
         task_id='send_slack_alerts',
         python_callable=send_slack_alerts,
-        provide_context=True,
     )
 
     # Task 4: Send email alerts (runs in parallel with Slack)
     send_email_task = PythonOperator(
         task_id='send_email_alerts',
         python_callable=send_email_alerts,
-        provide_context=True,
     )
 
     # Task 5: Generate detailed report
     generate_report_task = PythonOperator(
         task_id='generate_report',
         python_callable=generate_lead_report,
-        provide_context=True,
     )
 
     # Task 6: Log alert summary
     log_summary_task = PythonOperator(
         task_id='log_summary',
         python_callable=log_alert_summary,
-        provide_context=True,
     )
 
     # Define dependencies

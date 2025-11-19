@@ -3,7 +3,8 @@ ETL Loaders
 
 Convert Pydantic models (Phase 1) to SQLAlchemy models (Phase 2) and load into database.
 """
-from datetime import datetime
+import json
+from datetime import datetime, date
 from typing import List, Dict, Any, Optional
 
 from sqlalchemy.orm import Session
@@ -11,7 +12,7 @@ from sqlalchemy.orm import Session
 from src.wholesaler.models.property import TaxSaleProperty, EnrichedProperty
 from src.wholesaler.models.foreclosure import ForeclosureProperty
 from src.wholesaler.models.property_record import PropertyRecord as PydanticPropertyRecord
-from src.wholesaler.pipelines.lead_scoring import LeadScore as PydanticLeadScore
+from src.wholesaler.scoring import LeadScore as PydanticLeadScore
 
 from src.wholesaler.db.repository import (
     PropertyRepository,
@@ -641,6 +642,10 @@ class EnrichedSeedLoader:
 
     def __init__(self):
         self.repository = EnrichedSeedRepository()
+        self.property_loader = PropertyLoader()
+        self.tax_sale_repo = TaxSaleRepository()
+        self.foreclosure_repo = ForeclosureRepository()
+        self.property_record_repo = PropertyRecordRepository()
         self.standardizer = AddressStandardizer()
         logger.info("enriched_seed_loader_initialized")
 
@@ -715,26 +720,11 @@ class EnrichedSeedLoader:
                         continue
 
                     # Convert row to dict (handling NaN values and numpy types)
-                    import numpy as np
-                    enriched_data = {}
-                    for k, v in row.to_dict().items():
-                        # Handle numpy arrays
-                        if isinstance(v, np.ndarray):
-                            enriched_data[k] = v.tolist() if v.size > 0 else []
-                        # Handle pandas NA/NaN
-                        elif pd.isna(v):
-                            enriched_data[k] = None
-                        # Handle numpy scalars
-                        elif isinstance(v, (np.integer, np.floating)):
-                            enriched_data[k] = v.item()
-                        # Handle numpy bool
-                        elif isinstance(v, np.bool_):
-                            enriched_data[k] = bool(v)
-                        else:
-                            enriched_data[k] = v
+                    # Use json round-trip to ensure all numpy types (including nested ones) are converted
+                    enriched_data = json.loads(row.to_json())
 
                     # Upsert to database
-                    self.repository.upsert(
+                    enriched_seed = self.repository.upsert(
                         session,
                         parcel_id_normalized=parcel_id_normalized,
                         seed_type=seed_type,
@@ -743,6 +733,8 @@ class EnrichedSeedLoader:
 
                     stats['processed'] += 1
                     stats['inserted'] += 1  # Simplified - can't easily distinguish
+
+                    self._materialize_property_records(session, enriched_seed)
 
                 except Exception as e:
                     logger.error(
@@ -782,3 +774,186 @@ class EnrichedSeedLoader:
                 )
 
             raise
+
+    def _materialize_property_records(self, session: Session, enriched_seed):
+        raw_record = enriched_seed.enriched_data or {}
+        if isinstance(raw_record, str):
+            try:
+                record = json.loads(raw_record)
+            except json.JSONDecodeError:
+                logger.warning(
+                    "enriched_seed_json_decode_failed",
+                    parcel_id=enriched_seed.parcel_id_normalized
+                )
+                record = {}
+        else:
+            record = raw_record
+        parcel_id_normalized = enriched_seed.parcel_id_normalized
+        parcel_id_original = record.get("parcel_id") or record.get("parcel_id_original") or parcel_id_normalized
+
+        existing_property = self.property_loader.repository.get_by_parcel(session, parcel_id_normalized)
+
+        property_data = {
+            'parcel_id_normalized': parcel_id_normalized,
+            'parcel_id_original': self._first_value(
+                record.get('parcel_id_original'),
+                record.get('parcel_id'),
+                getattr(existing_property, 'parcel_id_original', None),
+                parcel_id_original,
+            ),
+            'situs_address': self._first_value(
+                record.get('situs_address'),
+                getattr(existing_property, 'situs_address', None),
+            ),
+            'city': self._first_value(
+                record.get('city'),
+                getattr(existing_property, 'city', None),
+            ),
+            'state': self._first_value(
+                record.get('state'),
+                getattr(existing_property, 'state', None),
+            ),
+            'zip_code': self._first_value(
+                record.get('zip_code'),
+                getattr(existing_property, 'zip_code', None),
+            ),
+            'latitude': self._first_value(
+                record.get('latitude'),
+                getattr(existing_property, 'latitude', None),
+            ),
+            'longitude': self._first_value(
+                record.get('longitude'),
+                getattr(existing_property, 'longitude', None),
+            ),
+            'seed_type': self._merge_seed_types(
+                getattr(existing_property, 'seed_type', None),
+                record.get('seed_type'),
+                enriched_seed.seed_type,
+            ),
+        }
+        self.property_loader.repository.upsert(session, property_data)
+
+        if enriched_seed.seed_type == "tax_sale" or record.get("tax_sale"):
+            self._upsert_tax_sale(session, parcel_id_normalized, record)
+
+        if enriched_seed.seed_type == "foreclosure" or record.get("foreclosure"):
+            self._upsert_foreclosure(session, parcel_id_normalized, record)
+
+        if record.get("total_mkt") or record.get("property_record"):
+            self._upsert_property_record(session, parcel_id_normalized, record)
+
+    def _upsert_tax_sale(self, session: Session, parcel_id: str, record: Dict[str, Any]):
+        tax_data = record.get("tax_sale") or record
+        update_data = {
+            'parcel_id_normalized': parcel_id,
+            'tda_number': tax_data.get("tda_number"),
+            'sale_date': self._coerce_date(tax_data.get("sale_date")),
+            'deed_status': tax_data.get("deed_status"),
+            'latitude': tax_data.get("latitude"),
+            'longitude': tax_data.get("longitude"),
+            'raw_data': self._serialize_json(session, tax_data),
+            'data_source_timestamp': datetime.utcnow(),
+        }
+        self.tax_sale_repo.upsert_by_parcel(session, update_data)
+
+    def _upsert_foreclosure(self, session: Session, parcel_id: str, record: Dict[str, Any]):
+        fore_data = record.get("foreclosure") or record
+        update_data = {
+            'parcel_id_normalized': parcel_id,
+            'borrowers_name': fore_data.get("borrowers_name"),
+            'situs_address': fore_data.get("situs_address"),
+            'default_amount': fore_data.get("default_amount"),
+            'opening_bid': fore_data.get("opening_bid"),
+            'auction_date': self._coerce_date(fore_data.get("auction_date")),
+            'lender_name': fore_data.get("lender_name"),
+            'property_type': fore_data.get("property_type"),
+            'latitude': fore_data.get("latitude"),
+            'longitude': fore_data.get("longitude"),
+            'raw_data': self._serialize_json(session, fore_data),
+            'data_source_timestamp': datetime.utcnow(),
+        }
+        self.foreclosure_repo.upsert_by_parcel(session, update_data)
+
+    def _upsert_property_record(self, session: Session, parcel_id: str, record: Dict[str, Any]):
+        prop_data = record.get("property_record") or record
+        update_data = {
+            'parcel_id_normalized': parcel_id,
+            'situs_address': prop_data.get("situs_address"),
+            'owner_name': prop_data.get("owner_name"),
+            'total_mkt': prop_data.get("total_mkt"),
+            'total_assd': prop_data.get("total_assd"),
+            'taxable': prop_data.get("taxable"),
+            'taxes': prop_data.get("taxes"),
+            'year_built': prop_data.get("year_built"),
+            'living_area': prop_data.get("living_area"),
+            'lot_size': prop_data.get("lot_size"),
+            'equity_percent': prop_data.get("equity_percent"),
+            'latitude': prop_data.get("latitude"),
+            'longitude': prop_data.get("longitude"),
+            'raw_data': self._serialize_json(session, prop_data),
+            'data_source_timestamp': datetime.utcnow(),
+        }
+        self.property_record_repo.upsert(session, update_data)
+
+    @staticmethod
+    def _first_value(*values):
+        for value in values:
+            if value is None:
+                continue
+            if isinstance(value, str):
+                stripped = value.strip()
+                if not stripped:
+                    continue
+                return stripped
+            return value
+        return None
+
+    @staticmethod
+    def _merge_seed_types(*seed_values):
+        seeds = []
+        for value in seed_values:
+            if not value:
+                continue
+            if isinstance(value, str):
+                candidates = [part.strip() for part in value.split(',')]
+            elif isinstance(value, (list, tuple, set)):
+                candidates = [str(part).strip() for part in value]
+            else:
+                candidates = [str(value).strip()]
+            seeds.extend([c for c in candidates if c])
+
+        unique = sorted(set(seeds))
+        return ",".join(unique) if unique else None
+
+    @staticmethod
+    def _serialize_json(session: Session, payload: Any):
+        if payload is None:
+            return None
+
+        bind = session.get_bind()
+        if bind and bind.dialect.name == "sqlite":
+            return json.dumps(payload, default=EnrichedSeedLoader._json_default)
+        return payload
+
+    @staticmethod
+    def _json_default(value):
+        if isinstance(value, (datetime, date)):
+            return value.isoformat()
+        return str(value)
+
+    @staticmethod
+    def _coerce_date(value):
+        if value in (None, "", "null"):
+            return None
+        if isinstance(value, date) and not isinstance(value, datetime):
+            return value
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, str):
+            formats = ("%Y-%m-%d", "%m/%d/%Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f")
+            for fmt in formats:
+                try:
+                    return datetime.strptime(value[:len(fmt)], fmt).date()
+                except ValueError:
+                    continue
+        return None

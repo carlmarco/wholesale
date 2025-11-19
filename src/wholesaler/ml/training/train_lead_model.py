@@ -2,8 +2,24 @@
 Lead Qualification Model Training
 
 Trains a classifier that predicts the likelihood of a lead being Tier A.
+
+.. deprecated:: 2025-11
+    This module is deprecated in favor of train_distress_classifier.py which uses
+    the centralized FeatureStoreBuilder and predicts actual distress outcomes rather
+    than heuristic-based tier assignments.
+
+    Migration:
+        from src.wholesaler.ml.training.train_distress_classifier import main as train_distress
+        train_distress()
+
+    The new module provides:
+    - Centralized feature store integration
+    - Calibrated probability outputs
+    - Support for LightGBM/XGBoost with fallback
+    - Better model versioning and artifact management
 """
 import argparse
+import warnings
 from pathlib import Path
 
 import joblib
@@ -16,6 +32,12 @@ from src.wholesaler.ml.training.feature_builder import FeatureBuilder
 from src.wholesaler.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+warnings.warn(
+    "train_lead_model.py is deprecated. Use train_distress_classifier.py instead.",
+    DeprecationWarning,
+    stacklevel=1,
+)
 
 
 def train_lead_model(

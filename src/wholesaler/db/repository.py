@@ -17,7 +17,6 @@ from src.wholesaler.db.models import (
     TaxSale,
     Foreclosure,
     PropertyRecord,
-    CodeViolation,
     LeadScore,
     LeadScoreHistory,
     EnrichedSeed,
@@ -901,7 +900,7 @@ class EnrichedSeedRepository(BaseRepository):
         stored_enriched = enriched_data
         bind = session.get_bind()
         if bind and bind.dialect.name == "sqlite":
-            stored_enriched = json.dumps(enriched_data)
+            stored_enriched = json.dumps(enriched_data, default=_json_default)
 
         seed_data = {
             'parcel_id_normalized': parcel_id_normalized,
@@ -1024,6 +1023,32 @@ class EnrichedSeedRepository(BaseRepository):
 
         return session.execute(query).scalars().all()
 
+    def get_by_parcel_and_type(
+        self,
+        session: Session,
+        parcel_id_normalized: str,
+        seed_type: str
+    ) -> Optional[EnrichedSeed]:
+        """
+        Get a single enriched seed matching a parcel and seed type.
+
+        Args:
+            session: Database session
+            parcel_id_normalized: Normalized parcel ID
+            seed_type: Seed type identifier
+
+        Returns:
+            EnrichedSeed instance or None
+        """
+        query = select(EnrichedSeed).where(
+            and_(
+                EnrichedSeed.parcel_id_normalized == parcel_id_normalized,
+                EnrichedSeed.seed_type == seed_type
+            )
+        ).limit(1)
+
+        return session.execute(query).scalar_one_or_none()
+
     def get_stats(self, session: Session) -> Dict[str, Any]:
         """
         Get statistics about enriched seeds.
@@ -1070,3 +1095,9 @@ def _coerce_date(value: Any) -> Optional[date]:
         except ValueError:
             return None
     return None
+
+
+def _json_default(value: Any) -> str:
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return str(value)

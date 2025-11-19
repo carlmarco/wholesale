@@ -17,10 +17,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.wholesaler.db.base import Base
-from src.wholesaler.db.models import EnrichedSeed, Property
+from src.wholesaler.db.models import EnrichedSeed, Property, TaxSale
 from src.wholesaler.db.repository import EnrichedSeedRepository, PropertyRepository
 from src.wholesaler.etl.loaders import EnrichedSeedLoader
 from src.wholesaler.etl.seed_merger import SeedMerger
+from src.wholesaler.transformers.address_standardizer import AddressStandardizer
 
 
 @pytest.fixture(scope="function")
@@ -265,6 +266,82 @@ class TestEnrichedSeedLoader:
         finally:
             Path(parquet_path).unlink()
 
+    def test_load_from_parquet_materializes_property_tables(self, test_db):
+        """Loader should populate properties and tax sales tables."""
+        parcel_id = '12-34-56-7890-01-001'
+        with tempfile.NamedTemporaryFile(suffix='.parquet', delete=False) as tmp:
+            df = pd.DataFrame([
+                {
+                    'parcel_id': parcel_id,
+                    'seed_type': 'tax_sale',
+                    'tda_number': '2024-001',
+                    'sale_date': date(2024, 3, 15),
+                    'deed_status': 'Active Sale',
+                    'situs_address': '123 Main St',
+                    'city': 'Orlando',
+                    'state': 'FL',
+                    'zip_code': '32801',
+                    'latitude': 28.5383,
+                    'longitude': -81.3792,
+                }
+            ])
+            df.to_parquet(tmp.name)
+            parquet_path = tmp.name
+
+        try:
+            loader = EnrichedSeedLoader()
+            loader.load_from_parquet(test_db, parquet_path, track_run=False)
+
+            standardizer = AddressStandardizer()
+            normalized = standardizer.normalize_parcel_id(parcel_id)
+
+            prop_repo = PropertyRepository()
+            prop = prop_repo.get_by_parcel(test_db, normalized)
+            assert prop is not None
+            assert prop.seed_type == 'tax_sale'
+            assert prop.situs_address == '123 Main St'
+
+            tax_sale = test_db.query(TaxSale).filter_by(parcel_id_normalized=normalized).one()
+            assert tax_sale.tda_number == '2024-001'
+            assert tax_sale.deed_status == 'Active Sale'
+        finally:
+            Path(parquet_path).unlink()
+
+    def test_load_from_parquet_merges_seed_types(self, test_db):
+        """Loader should accumulate seed types without overwriting existing data."""
+        parcel_id = '12-34-56-7890-01-001'
+        with tempfile.NamedTemporaryFile(suffix='.parquet', delete=False) as tmp:
+            df = pd.DataFrame([
+                {
+                    'parcel_id': parcel_id,
+                    'seed_type': 'tax_sale',
+                    'situs_address': '123 Main St',
+                    'city': 'Orlando',
+                },
+                {
+                    'parcel_id': parcel_id,
+                    'seed_type': 'code_violation',
+                    'violation_count': 2,
+                }
+            ])
+            df.to_parquet(tmp.name)
+            parquet_path = tmp.name
+
+        try:
+            loader = EnrichedSeedLoader()
+            loader.load_from_parquet(test_db, parquet_path, track_run=False)
+
+            standardizer = AddressStandardizer()
+            normalized = standardizer.normalize_parcel_id(parcel_id)
+
+            prop_repo = PropertyRepository()
+            prop = prop_repo.get_by_parcel(test_db, normalized)
+            assert prop is not None
+            assert prop.situs_address == '123 Main St'
+            assert set(prop.seed_type.split(',')) == {'code_violation', 'tax_sale'}
+        finally:
+            Path(parquet_path).unlink()
+
 
 class TestSeedMerger:
     """Tests for SeedMerger."""
@@ -291,7 +368,7 @@ class TestSeedMerger:
 
         # Verify property created
         prop_repo = PropertyRepository()
-        prop = prop_repo.get_by_parcel_id(test_db, '1234567890')
+        prop = prop_repo.get_by_parcel(test_db, '1234567890')
         assert prop is not None
         assert prop.seed_type == 'tax_sale'
         assert prop.situs_address == '123 Main St'
@@ -307,6 +384,7 @@ class TestSeedMerger:
         existing_prop = prop_repo.create(
             test_db,
             parcel_id_normalized='1234567890',
+            parcel_id_original='1234567890',
             situs_address='Old Address',
         )
         test_db.commit()
@@ -341,6 +419,7 @@ class TestSeedMerger:
         prop = prop_repo.create(
             test_db,
             parcel_id_normalized='1234567890',
+            parcel_id_original='1234567890',
             seed_type='tax_sale',
         )
         test_db.commit()

@@ -215,12 +215,12 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      API_BASE_URL: http://api:8000/api/v1
+      API_BASE_URL: http://api:8000
     volumes:
       - .:/app
     ports:
       - "8501:8501"
-    command: streamlit run src/wholesaler/dashboard/app.py --server.port=8501 --server.address=0.0.0.0
+    command: streamlit run src/wholesaler/frontend/app.py --server.port=8501 --server.address=0.0.0.0
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8501/_stcore/health"]
       interval: 30s

@@ -3,22 +3,27 @@ API Client for Streamlit Frontend
 
 Handles all HTTP requests to the FastAPI backend.
 """
-import requests
+import os
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+
+import requests
+
+DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 
 class APIClient:
     """Client for interacting with Wholesaler API."""
 
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: Optional[str] = None):
         """
         Initialize API client.
 
         Args:
-            base_url: Base URL for API endpoints (default: http://localhost:8000)
+            base_url: Base URL for API endpoints (default: env `API_BASE_URL` or http://localhost:8000)
         """
-        self.base_url = base_url.rstrip("/")
+        resolved = base_url or DEFAULT_API_BASE_URL
+        self.base_url = resolved.rstrip("/")
         self.session = requests.Session()
 
     def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -37,7 +42,16 @@ class APIClient:
         """
         url = f"{self.base_url}{endpoint}"
         response = self.session.get(url, params=params)
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            try:
+                detail = response.json().get("detail")
+                if detail:
+                    raise Exception(f"{response.status_code} {response.reason}: {detail}") from e
+            except Exception:
+                pass
+            raise e
         return response.json()
 
     def health_check(self) -> Dict[str, Any]:
@@ -69,6 +83,7 @@ class APIClient:
         offset: int = 0,
         sort_by: str = "total_score",
         sort_order: str = "desc",
+        view: str = "hybrid",
     ) -> List[Dict[str, Any]]:
         """
         List leads with filtering and pagination.
@@ -92,6 +107,7 @@ class APIClient:
             "offset": offset,
             "sort_by": sort_by,
             "sort_order": sort_order,
+            "view": view,
         }
 
         if tier:

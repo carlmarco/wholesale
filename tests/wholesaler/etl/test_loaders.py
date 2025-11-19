@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.wholesaler.db.base import Base
 from src.wholesaler.models.property import TaxSaleProperty, EnrichedProperty
-from src.wholesaler.pipelines.lead_scoring import LeadScore as LeadScoreDataclass
+from src.wholesaler.scoring import LeadScore as LeadScoreDataclass
 from src.wholesaler.etl.loaders import (
     PropertyLoader,
     TaxSaleLoader,

@@ -90,6 +90,9 @@ class Settings(BaseSettings):
     ml_models_dir: str = "models"
     arv_model_filename: str = "arv_model.joblib"
     lead_model_filename: str = "lead_model.joblib"
+    
+    # Profitability Guardrails
+    profitability_min_profit: float = 15000.0
 
 
 # Singleton instance

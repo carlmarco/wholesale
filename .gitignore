@@ -86,3 +86,7 @@ standalone_admin_password.txt
 # Keep migrations in git, but exclude bytecode
 alembic/__pycache__/
 alembic/versions/__pycache__/
+# Processed data files (too large for git)
+data/processed/*.json
+data/processed/*.parquet
+data/processed/*.csv

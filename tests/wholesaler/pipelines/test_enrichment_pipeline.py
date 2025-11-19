@@ -9,7 +9,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.wholesaler.ingestion.seed_models import SeedRecord
-from src.wholesaler.pipelines.enrichment import UnifiedEnrichmentPipeline
+from src.wholesaler.enrichment import UnifiedEnrichmentPipeline
 
 
 def build_seed(parcel_id, seed_type, payload=None):
@@ -64,3 +64,56 @@ def test_unified_enrichment_pipeline_merges_tax_sale_and_distress():
 
     code_record = next(rec for rec in enriched if rec["seed_type"] == "code_violation")
     assert code_record["violation_count"] == 1
+
+
+def test_unified_enrichment_pipeline_applies_geo_metrics():
+    violation_df = pd.DataFrame(
+        [
+            {
+                "parcel_id": "12-34-56-7890-01-001",
+                "parcel_id_normalized": "123456789001001",
+                "caseinfostatus": "Closed",
+                "case_type": "Lot",
+                "casedt": datetime.utcnow(),
+                "days_to_resolve": 12,
+            }
+        ]
+    )
+
+    tax_seed = build_seed(
+        parcel_id="12-34-56-7890-01-001",
+        seed_type="tax_sale",
+        payload={
+            "parcel_id": "12-34-56-7890-01-001",
+            "tda_number": "2024-001",
+            "longitude": -81.0,
+            "latitude": 28.0,
+        },
+    )
+
+    pipeline = UnifiedEnrichmentPipeline(violation_df=violation_df)
+
+    class DummyGeoResult:
+        def __init__(self, parcel_id):
+            self.parcel_id = parcel_id
+
+        def to_dict(self):
+            return {
+                "nearby_violations": 5,
+                "nearby_open_violations": 2,
+                "nearest_violation_distance": 0.5,
+                "avg_violation_distance": 1.25,
+                "violation_types_nearby": ["Lot"],
+            }
+
+    class DummyGeoEnricher:
+        def enrich_properties(self, tax_models):
+            return [DummyGeoResult(model.parcel_id) for model in tax_models]
+
+    pipeline.geo_enricher = DummyGeoEnricher()
+    enriched = pipeline.run([tax_seed])
+
+    assert len(enriched) == 1
+    record = enriched[0]
+    assert record["geo_nearby_violations"] == 5
+    assert record["geo_nearest_violation_distance"] == 0.5

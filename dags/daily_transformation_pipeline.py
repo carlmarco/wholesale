@@ -9,11 +9,10 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
-from airflow.utils.dates import days_ago
 
 from src.wholesaler.enrichers.geo_enricher import GeoPropertyEnricher
-from src.wholesaler.transformers.deduplicator import PropertyDeduplicator
-from src.wholesaler.etl import PropertyLoader, PropertyRecordLoader
+from src.wholesaler.pipelines.deduplication import PropertyDeduplicator
+from src.wholesaler.etl import PropertyLoader
 from src.wholesaler.db import PropertyRepository, get_db_session
 from src.wholesaler.utils.logger import get_logger
 
@@ -143,35 +142,35 @@ def deduplicate_properties(**context):
     with get_db_session() as session:
         repo = PropertyRepository()
 
-        # Get all active properties
         properties = repo.get_active_properties(session)
         logger.info("properties_loaded_for_deduplication", count=len(properties))
 
-        # Group properties by normalized address
-        address_groups = {}
+        property_dicts = []
         for prop in properties:
-            address_key = deduplicator._normalize_address(prop.situs_address or "")
-            if address_key not in address_groups:
-                address_groups[address_key] = []
-            address_groups[address_key].append(prop)
+            property_dicts.append(
+                {
+                    'parcel_id_normalized': prop.parcel_id_normalized,
+                    'parcel_id_original': prop.parcel_id_original,
+                    'situs_address': prop.situs_address or "",
+                }
+            )
 
-        # Find and merge duplicates
-        for address_key, props in address_groups.items():
-            stats['processed'] += len(props)
+        duplicates = deduplicator.find_duplicates(property_dicts, by_address=True)
+        stats['processed'] = len(properties)
 
-            if len(props) > 1:
-                stats['duplicates_found'] += len(props) - 1
+        for address_key, dup_list in duplicates.items():
+            if not dup_list:
+                continue
 
-                # Keep the first property, mark others as duplicates
-                primary_prop = props[0]
-                for duplicate_prop in props[1:]:
-                    logger.info("duplicate_property_found",
-                                primary=primary_prop.parcel_id_normalized,
-                                duplicate=duplicate_prop.parcel_id_normalized)
+            stats['duplicates_found'] += len(dup_list) - 1
+            primary_id = dup_list[0].get('parcel_id_normalized')
+            duplicate_ids = [item.get('parcel_id_normalized') for item in dup_list[1:] if item.get('parcel_id_normalized')]
 
-                    # Soft delete duplicate
-                    repo.soft_delete(session, duplicate_prop.parcel_id_normalized)
-                    stats['merged'] += 1
+            for dup_id in duplicate_ids:
+                repo.soft_delete(session, dup_id)
+                stats['merged'] += 1
+
+            stats['processed'] += len(dup_list)
 
         session.commit()
 
@@ -217,8 +216,8 @@ with DAG(
     'daily_transformation_pipeline',
     default_args=default_args,
     description='Daily enrichment and deduplication of property data',
-    schedule_interval='0 3 * * *',  # 3:00 AM daily (1 hour after ingestion)
-    start_date=days_ago(1),
+    schedule='0 3 * * *',  # 3:00 AM daily (1 hour after ingestion)
+    start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['transformation', 'enrichment', 'deduplication', 'etl'],
 ) as dag:
@@ -236,28 +235,24 @@ with DAG(
     fetch_properties_task = PythonOperator(
         task_id='fetch_properties',
         python_callable=fetch_properties_for_enrichment,
-        provide_context=True,
     )
 
     # Task 2: Enrich properties with geographic data
     enrich_properties_task = PythonOperator(
         task_id='enrich_properties',
         python_callable=enrich_properties,
-        provide_context=True,
     )
 
     # Task 3: Deduplicate properties
     deduplicate_task = PythonOperator(
         task_id='deduplicate_properties',
         python_callable=deduplicate_properties,
-        provide_context=True,
     )
 
     # Task 4: Validate transformation
     validate_task = PythonOperator(
         task_id='validate_transformation',
         python_callable=validate_transformation,
-        provide_context=True,
     )
 
     # Define dependencies

@@ -5,15 +5,20 @@ Scores properties and ranks them as A/B/C/D tier leads.
 
 Schedule: Daily at 4:00 AM (after transformation completes)
 """
+import json
 from datetime import datetime, timedelta, date
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
-from airflow.utils.dates import days_ago
 
-from src.wholesaler.pipelines.lead_scorer import LeadScorer
+from src.wholesaler.scoring import LeadScorer
 from src.wholesaler.etl import LeadScoreLoader
-from src.wholesaler.db import PropertyRepository, LeadScoreRepository, get_db_session
+from src.wholesaler.db import (
+    PropertyRepository,
+    LeadScoreRepository,
+    EnrichedSeedRepository,
+    get_db_session,
+)
 from src.wholesaler.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -75,35 +80,20 @@ def score_all_leads(**context):
 
     with get_db_session() as session:
         property_repo = PropertyRepository()
+        seed_repo = EnrichedSeedRepository()
 
         for parcel_id in property_ids:
             try:
-                # Get property from database
                 property_obj = property_repo.get_by_parcel(session, parcel_id)
                 if not property_obj:
                     logger.warning("property_not_found_for_scoring", parcel_id=parcel_id)
                     stats['failed'] += 1
                     continue
 
-                # Convert to EnrichedProperty for scoring
-                from src.wholesaler.models.property import EnrichedProperty
-                enriched_prop = EnrichedProperty(
-                    parcel_id=property_obj.parcel_id_original,
-                    tda_number=None,
-                    situs_address=property_obj.situs_address,
-                    city=property_obj.city,
-                    state=property_obj.state,
-                    zip_code=property_obj.zip_code,
-                    latitude=property_obj.latitude,
-                    longitude=property_obj.longitude,
-                    nearby_violations=[],  # Would be loaded from DB if needed
-                )
-
-                # Score the lead
-                lead_score = scorer.score_lead(enriched_prop)
+                payload, lead_score = score_property(property_obj, session, scorer, seed_repo)
 
                 if lead_score:
-                    scored_leads.append((enriched_prop, lead_score))
+                    scored_leads.append((payload, lead_score))
                     stats['scored'] += 1
                 else:
                     stats['failed'] += 1
@@ -134,6 +124,102 @@ def score_all_leads(**context):
     context['task_instance'].xcom_push(key='scoring_stats', value=stats)
 
     return stats
+
+
+def _convert_decimal(value):
+    """Safely convert Decimal/None to float."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return value
+
+
+def build_property_payload(property_obj):
+    """Build a feature dictionary for legacy lead scoring."""
+    payload = {
+        'parcel_id_normalized': property_obj.parcel_id_normalized,
+        'parcel_id_original': property_obj.parcel_id_original,
+        'situs_address': property_obj.situs_address,
+        'city': property_obj.city,
+        'state': property_obj.state,
+        'zip_code': property_obj.zip_code,
+        'seed_type': property_obj.seed_type,
+    }
+
+    if property_obj.tax_sale:
+        payload['tax_sale'] = {
+            'tda_number': property_obj.tax_sale.tda_number,
+            'sale_date': property_obj.tax_sale.sale_date,
+            'deed_status': property_obj.tax_sale.deed_status,
+            'latitude': _convert_decimal(property_obj.tax_sale.latitude),
+            'longitude': _convert_decimal(property_obj.tax_sale.longitude),
+        }
+
+    if property_obj.foreclosure:
+        payload['foreclosure'] = {
+            'borrowers_name': property_obj.foreclosure.borrowers_name,
+            'default_amount': _convert_decimal(property_obj.foreclosure.default_amount),
+            'opening_bid': _convert_decimal(property_obj.foreclosure.opening_bid),
+            'auction_date': property_obj.foreclosure.auction_date,
+            'lender_name': property_obj.foreclosure.lender_name,
+        }
+
+    if property_obj.property_record:
+        payload['property_record'] = {
+            'total_mkt': _convert_decimal(property_obj.property_record.total_mkt),
+            'equity_percent': _convert_decimal(property_obj.property_record.equity_percent),
+            'taxes': _convert_decimal(property_obj.property_record.taxes),
+            'year_built': property_obj.property_record.year_built,
+            'living_area': property_obj.property_record.living_area,
+            'lot_size': property_obj.property_record.lot_size,
+        }
+
+    if property_obj.code_violations:
+        violation_count = len(property_obj.code_violations)
+        open_count = sum(
+            1
+            for violation in property_obj.code_violations
+            if (violation.status or '').lower() == 'open'
+        )
+        payload['violation_count'] = violation_count
+        payload['nearby_violations'] = violation_count
+        payload['nearby_open_violations'] = open_count
+
+    return payload
+
+
+def _decode_enriched_data(enriched_data):
+    """Ensure enriched_data is a dict."""
+    if enriched_data is None:
+        return None
+    if isinstance(enriched_data, str):
+        try:
+            return json.loads(enriched_data)
+        except json.JSONDecodeError:
+            return None
+    return dict(enriched_data)
+
+
+def score_property(property_obj, session, scorer, seed_repo):
+    """Score a property using either enriched seed data or legacy payload."""
+    seed_type = (property_obj.seed_type or "").split(',')[0].strip() if property_obj.seed_type else None
+
+    if seed_type:
+        enriched_seed = seed_repo.get_by_parcel_and_type(session, property_obj.parcel_id_normalized, seed_type)
+        enriched_data = _decode_enriched_data(enriched_seed.enriched_data) if enriched_seed else None
+
+        if enriched_data:
+            lead_score = scorer.score_seed_based_lead(enriched_data, seed_type)
+            payload = scorer._convert_seed_to_legacy_format(enriched_data, seed_type)
+            payload['parcel_id_normalized'] = property_obj.parcel_id_normalized
+            payload['seed_type'] = property_obj.seed_type
+            return payload, lead_score
+
+    payload = build_property_payload(property_obj)
+    lead_score = scorer.score_lead(payload)
+    return payload, lead_score
 
 
 def create_history_snapshots(**context):
@@ -254,8 +340,8 @@ with DAG(
     'daily_lead_scoring',
     default_args=default_args,
     description='Daily lead scoring and ranking of properties',
-    schedule_interval='0 4 * * *',  # 4:00 AM daily (1 hour after transformation)
-    start_date=days_ago(1),
+    schedule='0 4 * * *',  # 4:00 AM daily (1 hour after transformation)
+    start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['scoring', 'leads', 'ranking', 'etl'],
 ) as dag:
@@ -273,35 +359,30 @@ with DAG(
     fetch_properties_task = PythonOperator(
         task_id='fetch_properties',
         python_callable=fetch_properties_for_scoring,
-        provide_context=True,
     )
 
     # Task 2: Score all leads
     score_leads_task = PythonOperator(
         task_id='score_leads',
         python_callable=score_all_leads,
-        provide_context=True,
     )
 
     # Task 3: Create history snapshots
     create_snapshots_task = PythonOperator(
         task_id='create_snapshots',
         python_callable=create_history_snapshots,
-        provide_context=True,
     )
 
     # Task 4: Calculate tier statistics
     calculate_statistics_task = PythonOperator(
         task_id='calculate_statistics',
         python_callable=calculate_tier_statistics,
-        provide_context=True,
     )
 
     # Task 5: Validate scoring
     validate_task = PythonOperator(
         task_id='validate_scoring',
         python_callable=validate_scoring,
-        provide_context=True,
     )
 
     # Define dependencies

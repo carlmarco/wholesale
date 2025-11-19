@@ -54,12 +54,17 @@ class TestDAGImports:
 class TestDAGConfigurations:
     """Tests for DAG configuration validation."""
 
+    @staticmethod
+    def _get_schedule(dag):
+        """Handle Airflow 2 vs 3 schedule attribute."""
+        return getattr(dag, "schedule", getattr(dag, "schedule_interval", None))
+
     def test_ingestion_dag_config(self):
         """Test daily_property_ingestion DAG configuration."""
         from dags.daily_property_ingestion import dag
 
         assert dag.dag_id == 'daily_property_ingestion'
-        assert dag.schedule_interval == '0 2 * * *'  # 2:00 AM daily
+        assert self._get_schedule(dag) == '0 2 * * *'  # 2:00 AM daily
         assert dag.catchup is False
         assert 'ingestion' in dag.tags
 
@@ -72,7 +77,7 @@ class TestDAGConfigurations:
         from dags.daily_transformation_pipeline import dag
 
         assert dag.dag_id == 'daily_transformation_pipeline'
-        assert dag.schedule_interval == '0 3 * * *'  # 3:00 AM daily
+        assert self._get_schedule(dag) == '0 3 * * *'  # 3:00 AM daily
         assert dag.catchup is False
         assert 'transformation' in dag.tags
 
@@ -84,7 +89,7 @@ class TestDAGConfigurations:
         from dags.daily_lead_scoring import dag
 
         assert dag.dag_id == 'daily_lead_scoring'
-        assert dag.schedule_interval == '0 4 * * *'  # 4:00 AM daily
+        assert self._get_schedule(dag) == '0 4 * * *'  # 4:00 AM daily
         assert dag.catchup is False
         assert 'scoring' in dag.tags
 
@@ -93,7 +98,7 @@ class TestDAGConfigurations:
         from dags.tier_a_alert_notifications import dag
 
         assert dag.dag_id == 'tier_a_alert_notifications'
-        assert dag.schedule_interval == '0 5 * * *'  # 5:00 AM daily
+        assert self._get_schedule(dag) == '0 5 * * *'  # 5:00 AM daily
         assert dag.catchup is False
         assert 'alerts' in dag.tags
 
@@ -102,7 +107,7 @@ class TestDAGConfigurations:
         from dags.data_quality_checks import dag
 
         assert dag.dag_id == 'data_quality_checks'
-        assert dag.schedule_interval == '0 6 * * *'  # 6:00 AM daily
+        assert self._get_schedule(dag) == '0 6 * * *'  # 6:00 AM daily
         assert dag.catchup is False
         assert 'quality' in dag.tags
 

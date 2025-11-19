@@ -17,13 +17,12 @@ class PropertyBase(BaseModel):
     zip_code: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    seed_type: Optional[str] = None
 
 
 class PropertyDetail(PropertyBase):
     """Detailed property schema with all fields."""
     parcel_id_original: Optional[str] = None
-    county: Optional[str] = None
-    property_use: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -37,7 +36,8 @@ class TaxSaleInfo(BaseModel):
     tda_number: Optional[str] = None
     sale_date: Optional[date] = None
     deed_status: Optional[str] = None
-    opening_bid: Optional[float] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -45,11 +45,15 @@ class TaxSaleInfo(BaseModel):
 
 class ForeclosureInfo(BaseModel):
     """Foreclosure information."""
-    case_number: Optional[str] = None
-    filing_date: Optional[date] = None
+    borrowers_name: Optional[str] = None
+    situs_address: Optional[str] = None
+    default_amount: Optional[float] = None
+    opening_bid: Optional[float] = None
     auction_date: Optional[date] = None
-    judgment_amount: Optional[float] = None
-    foreclosure_status: Optional[str] = None
+    lender_name: Optional[str] = None
+    property_type: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -71,6 +75,15 @@ class LeadScoreListItem(LeadScoreBase):
     """Lead score for list views."""
     property: PropertyBase
     scored_at: datetime
+    hybrid_score: Optional[float] = None
+    hybrid_tier: Optional[str] = None
+    logistic_probability: Optional[float] = None
+    priority_score: Optional[float] = None
+    
+    # Phase 3.6/3.7
+    profitability_score: Optional[float] = None
+    ml_risk_score: Optional[float] = None
+    ml_risk_tier: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -84,6 +97,14 @@ class LeadScoreDetail(LeadScoreBase):
     scored_at: datetime
     created_at: datetime
     updated_at: datetime
+    
+    # Phase 3.6/3.7
+    profitability_score: Optional[float] = None
+    profitability_details: Optional[dict] = None
+    ml_risk_score: Optional[float] = None
+    ml_risk_tier: Optional[str] = None
+    ml_cluster_id: Optional[int] = None
+    ml_anomaly_score: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -139,3 +160,14 @@ class LeadFilters(BaseModel):
     offset: int = Field(0, ge=0)
     sort_by: str = Field("total_score", pattern="^(total_score|scored_at|situs_address)$")
     sort_order: str = Field("desc", pattern="^(asc|desc)$")
+class PriorityLead(BaseModel):
+    """Priority lead response."""
+    parcel_id_normalized: str
+    seed_type: str
+    priority_score: float
+    hybrid_score: float
+    hybrid_tier: str
+    logistic_probability: float
+    violation_count: Optional[int] = None
+    situs_address: Optional[str] = None
+    city: Optional[str] = None

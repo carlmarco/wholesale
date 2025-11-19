@@ -31,16 +31,23 @@ def render_leads_table(leads: List[Dict[str, Any]]) -> None:
     for lead in leads:
         property_data = lead.get("property", {})
         df_data.append({
-            "Tier": lead["tier"],
-            "Score": lead["total_score"],
+            "Tier": lead.get("tier"),
+            "Score": lead.get("total_score"),
+            "Seed Type": property_data.get("seed_type") or "—",
             "Address": property_data.get("situs_address", "N/A"),
             "City": property_data.get("city", "N/A"),
             "ZIP": property_data.get("zip_code", "N/A"),
-            "Distress": lead["distress_score"],
-            "Value": lead["value_score"],
-            "Location": lead["location_score"],
-            "Urgency": lead["urgency_score"],
-            "Parcel ID": lead["parcel_id_normalized"],
+            "Distress": lead.get("distress_score"),
+            "Value": lead.get("value_score"),
+            "Location": lead.get("location_score"),
+            "Urgency": lead.get("urgency_score"),
+            "Hybrid Score": lead.get("hybrid_score"),
+            "Hybrid Tier": lead.get("hybrid_tier"),
+            "Logistic Prob.": lead.get("logistic_probability"),
+            "Priority Score": lead.get("priority_score"),
+            "Profitability": lead.get("profitability_score"),
+            "ML Risk": lead.get("ml_risk_score"),
+            "Parcel ID": lead.get("parcel_id_normalized"),
         })
 
     df = pd.DataFrame(df_data)
@@ -53,6 +60,8 @@ def render_leads_table(leads: List[Dict[str, Any]]) -> None:
 
     def style_score(val):
         """Style score cells with gradient."""
+        if pd.isna(val):
+            return ""
         if val >= 80:
             return "background-color: #d4edda; color: #155724;"
         elif val >= 60:
@@ -62,18 +71,29 @@ def render_leads_table(leads: List[Dict[str, Any]]) -> None:
         else:
             return "background-color: #f8d7da; color: #721c24;"
 
+    def safe_format(val, fmt="{:.1f}"):
+        if pd.isna(val):
+            return "—"
+        return fmt.format(val)
+
+    score_columns = ["Score", "Distress", "Value", "Location", "Urgency", "Hybrid Score", "Priority Score", "Profitability"]
     styled_df = df.style.applymap(
         style_tier,
         subset=["Tier"]
     ).applymap(
         style_score,
-        subset=["Score", "Distress", "Value", "Location", "Urgency"]
+        subset=[col for col in score_columns if col in df.columns]
     ).format({
-        "Score": "{:.1f}",
-        "Distress": "{:.1f}",
-        "Value": "{:.1f}",
-        "Location": "{:.1f}",
-        "Urgency": "{:.1f}",
+        "Score": lambda x: safe_format(x),
+        "Distress": lambda x: safe_format(x),
+        "Value": lambda x: safe_format(x),
+        "Location": lambda x: safe_format(x),
+        "Urgency": lambda x: safe_format(x),
+        "Hybrid Score": lambda x: safe_format(x),
+        "Priority Score": lambda x: safe_format(x),
+        "Profitability": lambda x: safe_format(x),
+        "ML Risk": lambda x: safe_format(x, "{:.4f}"),
+        "Logistic Prob.": lambda x: safe_format(x, "{:.2f}"),
     })
 
     st.dataframe(styled_df, use_container_width=True, height=600)
@@ -104,10 +124,10 @@ def render_property_details_table(lead: Dict[str, Any]) -> None:
         "City": property_data.get("city", "N/A"),
         "State": property_data.get("state", "N/A"),
         "ZIP Code": property_data.get("zip_code", "N/A"),
-        "County": property_data.get("county", "N/A"),
-        "Property Use": property_data.get("property_use", "N/A"),
+        "Seed Types": property_data.get("seed_type", "N/A"),
         "Latitude": property_data.get("latitude", "N/A"),
         "Longitude": property_data.get("longitude", "N/A"),
+        "Active": "Yes" if property_data.get("is_active") else "No",
     }
 
     df = pd.DataFrame(list(details.items()), columns=["Field", "Value"])
@@ -152,11 +172,13 @@ def render_foreclosure_table(lead: Dict[str, Any]) -> None:
         return
 
     details = {
-        "Case Number": foreclosure.get("case_number", "N/A"),
-        "Filing Date": format_date(foreclosure.get("filing_date")),
+        "Borrower": foreclosure.get("borrowers_name", "N/A"),
+        "Situs Address": foreclosure.get("situs_address", "N/A"),
         "Auction Date": format_date(foreclosure.get("auction_date")),
-        "Judgment Amount": format_currency(foreclosure.get("judgment_amount")),
-        "Status": foreclosure.get("foreclosure_status", "N/A"),
+        "Default Amount": format_currency(foreclosure.get("default_amount")),
+        "Opening Bid": format_currency(foreclosure.get("opening_bid")),
+        "Lender": foreclosure.get("lender_name", "N/A"),
+        "Property Type": foreclosure.get("property_type", "N/A"),
     }
 
     df = pd.DataFrame(list(details.items()), columns=["Field", "Value"])

@@ -501,6 +501,63 @@ class LeadScore(Base, TimestampMixin):
         comment="List of scoring reasons"
     )
 
+    # ML-based predictions
+    ml_probability: Mapped[Optional[float]] = mapped_column(
+        Numeric(5, 4),
+        nullable=True,
+        comment="ML model distress probability (0-1)"
+    )
+    expected_return: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+        comment="ML predicted expected return in dollars"
+    )
+    ml_confidence: Mapped[Optional[float]] = mapped_column(
+        Numeric(5, 4),
+        nullable=True,
+        comment="ML model confidence score (0-1)"
+    )
+    priority_flag: Mapped[Optional[bool]] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=False,
+        comment="High priority flag from ML/hybrid scoring"
+    )
+    
+    # Phase 3.6 Profitability
+    profitability_score: Mapped[Optional[float]] = mapped_column(
+        Numeric(5, 2),
+        nullable=True,
+        comment="Profitability bucket score (0-100)"
+    )
+    profitability_details: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="Detailed profitability metrics (projected_profit, roi, etc)"
+    )
+    
+    # Phase 3.7 Label-Free ML
+    ml_risk_score: Mapped[Optional[float]] = mapped_column(
+        Numeric(5, 4),
+        nullable=True,
+        comment="Composite risk score (0-1)"
+    )
+    ml_risk_tier: Mapped[Optional[str]] = mapped_column(
+        String(1),
+        nullable=True,
+        comment="Risk tier (A/B/C/D)"
+    )
+    ml_cluster_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="Unsupervised cluster ID"
+    )
+    ml_anomaly_score: Mapped[Optional[float]] = mapped_column(
+        Numeric(10, 4),
+        nullable=True,
+        comment="Anomaly detection score"
+    )
+
     # When scored
     scored_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -743,3 +800,264 @@ class DataIngestionRun(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<DataIngestionRun(source={self.source_type}, status={self.status}, processed={self.records_processed})>"
+
+
+class MLFeatureStore(Base):
+    """
+    Materialized feature store for ML training and inference.
+
+    Flattened, normalized features computed from enriched_seeds and related tables.
+    Each row represents a point-in-time feature vector for a parcel.
+    """
+    __tablename__ = "ml_feature_store"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    parcel_id_normalized: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        comment="Normalized parcel ID"
+    )
+
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        comment="When features were computed"
+    )
+
+    # Distress features
+    violation_count: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        default=0,
+        comment="Total number of violations"
+    )
+    open_violation_count: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        default=0,
+        comment="Number of open/active violations"
+    )
+    days_since_last_violation: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="Days since most recent violation"
+    )
+    max_violation_severity: Mapped[Optional[float]] = mapped_column(
+        Numeric(5, 2),
+        nullable=True,
+        comment="Maximum violation severity score"
+    )
+
+    # Financial features
+    total_market_value: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+        comment="Total market value"
+    )
+    equity_percent: Mapped[Optional[float]] = mapped_column(
+        Numeric(6, 2),
+        nullable=True,
+        comment="Equity percentage"
+    )
+    tax_rate: Mapped[Optional[float]] = mapped_column(
+        Numeric(6, 4),
+        nullable=True,
+        comment="Property tax rate"
+    )
+    default_amount: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+        comment="Foreclosure default amount"
+    )
+    opening_bid: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+        comment="Foreclosure opening bid"
+    )
+
+    # Temporal features
+    days_to_auction: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="Days until foreclosure auction"
+    )
+    days_to_tax_sale: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="Days until tax sale"
+    )
+    property_age_years: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="Property age in years"
+    )
+
+    # Categorical features (one-hot encoded)
+    seed_type_tax_sale: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Is tax sale seed"
+    )
+    seed_type_foreclosure: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Is foreclosure seed"
+    )
+    seed_type_code_violation: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Is code violation seed"
+    )
+
+    # Location features (encoded)
+    city_encoded: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="City label encoded"
+    )
+    zip_code_encoded: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="ZIP code label encoded"
+    )
+
+    # Geo features
+    nearby_violations_count: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        default=0,
+        comment="Number of nearby violations (geo radius)"
+    )
+    nearest_violation_distance: Mapped[Optional[float]] = mapped_column(
+        Numeric(8, 4),
+        nullable=True,
+        comment="Distance to nearest violation in miles"
+    )
+
+    # Target labels (when available for training)
+    actual_distress_outcome: Mapped[Optional[bool]] = mapped_column(
+        Boolean,
+        nullable=True,
+        comment="Did this property actually experience distress event"
+    )
+    actual_sale_price: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+        comment="Actual sale price if sold"
+    )
+    label_date: Mapped[Optional[date]] = mapped_column(
+        Date,
+        nullable=True,
+        comment="Date when label was recorded"
+    )
+
+    __table_args__ = (
+        UniqueConstraint('parcel_id_normalized', 'computed_at', name='uq_ml_features_parcel_time'),
+        Index('idx_ml_features_parcel', 'parcel_id_normalized'),
+        Index('idx_ml_features_computed_at', 'computed_at'),
+        Index('idx_ml_features_has_outcome', 'actual_distress_outcome'),
+    )
+
+    def __repr__(self) -> str:
+        return f"<MLFeatureStore(parcel={self.parcel_id_normalized}, computed_at={self.computed_at})>"
+
+
+class ModelRegistry(Base, TimestampMixin):
+    """
+    Registry for ML model artifacts and metadata.
+
+    Tracks model versions, training metrics, and deployment status.
+    """
+    __tablename__ = "model_registry"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    model_name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        comment="Model name (e.g., distress_classifier, sale_probability)"
+    )
+    version: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        comment="Model version (e.g., v1.0.0, 20241114_120000)"
+    )
+    artifact_path: Mapped[str] = mapped_column(
+        String(500),
+        nullable=False,
+        comment="Path to model artifact file (joblib)"
+    )
+
+    # Training metadata
+    training_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        comment="When model was trained"
+    )
+    training_samples: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="Number of training samples"
+    )
+    feature_names: Mapped[Optional[list]] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="List of feature names used"
+    )
+    hyperparameters: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="Model hyperparameters"
+    )
+
+    # Performance metrics
+    metrics: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="Training/validation metrics (ROC-AUC, PR-AUC, MAE, etc.)"
+    )
+    validation_metrics: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="Hold-out validation metrics"
+    )
+
+    # Deployment status
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Is this the currently active/deployed model"
+    )
+    promoted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="When model was promoted to production"
+    )
+    deprecated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="When model was deprecated"
+    )
+
+    # Notes
+    description: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Model description and notes"
+    )
+
+    __table_args__ = (
+        UniqueConstraint('model_name', 'version', name='uq_model_name_version'),
+        Index('idx_model_registry_name', 'model_name'),
+        Index('idx_model_registry_active', 'is_active'),
+        Index('idx_model_registry_training_date', 'training_date'),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ModelRegistry(name={self.model_name}, version={self.version}, active={self.is_active})>"

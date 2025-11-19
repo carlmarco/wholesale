@@ -96,11 +96,21 @@ class TestEmailNotifications:
 
         assert result is False
 
+    @patch('dags.utils.notifications.smtplib.SMTP')
     @patch('dags.utils.notifications.settings')
-    def test_send_email_notification_success(self, mock_settings):
+    def test_send_email_notification_success(self, mock_settings, mock_smtp):
         """Test sending email notification (currently logs only)."""
         mock_settings.alert_enable_email = True
         mock_settings.alert_email = "test@example.com"
+        mock_settings.smtp_host = "smtp.test"
+        mock_settings.smtp_port = 587
+        mock_settings.smtp_user = "user"
+        mock_settings.smtp_password = "pass"
+        mock_settings.smtp_from_email = "alerts@test.com"
+        mock_settings.smtp_use_tls = True
+
+        smtp_instance = mock_smtp.return_value.__enter__.return_value
+        smtp_instance.send_message.return_value = {}
 
         result = send_email_notification(
             subject="Test Subject",

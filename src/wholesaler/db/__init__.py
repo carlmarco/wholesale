@@ -33,6 +33,7 @@ from src.wholesaler.db.repository import (
     PropertyRecordRepository,
     LeadScoreRepository,
     DataIngestionRunRepository,
+    EnrichedSeedRepository,
 )
 from src.wholesaler.db import utils as db_utils
 
@@ -66,6 +67,7 @@ __all__ = [
     "PropertyRecordRepository",
     "LeadScoreRepository",
     "DataIngestionRunRepository",
+    "EnrichedSeedRepository",
     # Utilities
     "db_utils",
 ]
