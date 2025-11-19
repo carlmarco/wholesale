@@ -20,7 +20,16 @@ class MockAPIClient:
     def _load_data(self):
         """Load exported demo data."""
         try:
-            data_path = Path(__file__).parent.parent / "data" / "demo_leads.json"
+            # Resolve path relative to this file (src/wholesaler/frontend/utils/mock_api_client.py)
+            # Data is in src/wholesaler/frontend/data/demo_leads.json
+            current_dir = Path(__file__).parent.resolve()
+            data_path = current_dir.parent / "data" / "demo_leads.json"
+            
+            if not data_path.exists():
+                print(f"Warning: Demo data file not found at {data_path}")
+                self.data = {"leads": [], "stats": {}}
+                return
+
             with open(data_path, "r") as f:
                 self.data = json.load(f)
         except Exception as e:
