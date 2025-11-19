@@ -264,6 +264,7 @@ def main():
                         logistic_view = alt_scores["logistic"]
                         priority_view = alt_scores["priority"]
                         legacy_view = alt_scores.get("legacy", 0.0)
+                        hybrid_view = alt_scores.get("hybrid", {})
                         legacy_score.reasons.append(
                             f"Logistic probability {logistic_view['probability']:.2f}"
                         )
@@ -278,7 +279,19 @@ def main():
                     if ml_prediction:
                         legacy_score.reasons.extend(ml_prediction.reasons)
 
-                    # Save to database with ML columns
+                    # Extract profitability data from hybrid scorer result
+                    profitability_score = None
+                    profitability_details = None
+                    if alt_scores and "hybrid" in alt_scores:
+                        hybrid_view = alt_scores["hybrid"]
+                        # Get profitability bucket score
+                        if "bucket_scores" in hybrid_view and hasattr(hybrid_view["bucket_scores"], "profitability"):
+                            profitability_score = float(hybrid_view["bucket_scores"].profitability)
+                        # Get profitability details (profit, ROI, etc.)
+                        if "profitability" in hybrid_view:
+                            profitability_details = hybrid_view["profitability"]
+
+                    # Save to database with ML and profitability columns
                     score_data = {
                         'parcel_id_normalized': prop.parcel_id_normalized,
                         'total_score': legacy_score.total_score,
@@ -294,6 +307,9 @@ def main():
                         'expected_return': ml_prediction.expected_return if ml_prediction else None,
                         'ml_confidence': ml_prediction.confidence if ml_prediction else None,
                         'priority_flag': ml_prediction.priority_flag if ml_prediction else False,
+                        # Phase 3.6 - Profitability columns
+                        'profitability_score': profitability_score,
+                        'profitability_details': profitability_details,
                     }
                     score_repo.upsert_by_parcel(session, score_data)
                     scored_count += 1
