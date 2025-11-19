@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, '/Users/carlmarco/wholesaler')
 
 from src.wholesaler.pipelines.deduplication import PropertyDeduplicator
-from src.wholesaler.pipelines.lead_scoring import LeadScorer, LeadScore
+from src.wholesaler.scoring import LeadScorer, LeadScore
 from src.wholesaler.models.property import TaxSaleProperty
 from src.wholesaler.models.foreclosure import ForeclosureProperty
 from src.wholesaler.models.property_record import PropertyRecord

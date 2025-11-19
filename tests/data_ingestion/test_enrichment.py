@@ -32,6 +32,12 @@ def sample_csv_file():
 
 
 @pytest.fixture
+def sample_violations_df(sample_csv_file):
+    """Load sample CSV into DataFrame for the enricher."""
+    return pd.read_csv(sample_csv_file, dtype={'parcel_id': str})
+
+
+@pytest.fixture
 def sample_properties():
     """Sample tax sale properties"""
     return [
@@ -57,26 +63,26 @@ def sample_properties():
 class TestPropertyEnricher:
     """Tests for PropertyEnricher class"""
 
-    def test_enricher_initialization(self, sample_csv_file):
+    def test_enricher_initialization(self, sample_violations_df):
         """Test that enricher initializes correctly"""
-        enricher = PropertyEnricher(sample_csv_file)
+        enricher = PropertyEnricher(sample_violations_df)
 
         assert enricher.violations_df is not None
         assert len(enricher.violations_df) == 4
         assert 'parcel_id_normalized' in enricher.violations_df.columns
 
-    def test_parcel_id_normalization(self, sample_csv_file):
+    def test_parcel_id_normalization(self, sample_violations_df):
         """Test that parcel IDs are normalized correctly"""
-        enricher = PropertyEnricher(sample_csv_file)
+        enricher = PropertyEnricher(sample_violations_df)
 
         # Check that .0 suffix is removed
         normalized_ids = enricher.violations_df['parcel_id_normalized'].tolist()
         assert '292228885002050' in normalized_ids
         assert '123456789012345' in normalized_ids
 
-    def test_enrich_properties_with_match(self, sample_csv_file):
+    def test_enrich_properties_with_match(self, sample_violations_df):
         """Test enriching properties when there's a match"""
-        enricher = PropertyEnricher(sample_csv_file)
+        enricher = PropertyEnricher(sample_violations_df)
 
         properties = [
             {
@@ -101,9 +107,9 @@ class TestPropertyEnricher:
         assert prop['has_violations'] is True
         assert 'Lot' in prop['violation_types'] or 'Housing' in prop['violation_types']
 
-    def test_enrich_properties_without_match(self, sample_csv_file):
+    def test_enrich_properties_without_match(self, sample_violations_df):
         """Test enriching properties when there's no match"""
-        enricher = PropertyEnricher(sample_csv_file)
+        enricher = PropertyEnricher(sample_violations_df)
 
         properties = [
             {
@@ -128,9 +134,9 @@ class TestPropertyEnricher:
         assert prop['violation_types'] == []
         assert prop['most_recent_violation'] is None
 
-    def test_calculate_violation_metrics_no_violations(self, sample_csv_file):
+    def test_calculate_violation_metrics_no_violations(self, sample_violations_df):
         """Test metrics calculation with no violations"""
-        enricher = PropertyEnricher(sample_csv_file)
+        enricher = PropertyEnricher(sample_violations_df)
 
         empty_df = pd.DataFrame()
         metrics = enricher._calculate_violation_metrics(empty_df)
@@ -142,9 +148,9 @@ class TestPropertyEnricher:
         assert metrics['most_recent_violation'] is None
         assert metrics['avg_days_to_resolve'] is None
 
-    def test_calculate_violation_metrics_with_violations(self, sample_csv_file):
+    def test_calculate_violation_metrics_with_violations(self, sample_violations_df):
         """Test metrics calculation with violations"""
-        enricher = PropertyEnricher(sample_csv_file)
+        enricher = PropertyEnricher(sample_violations_df)
 
         # Get violations for parcel 292228885002050
         violations = enricher.violations_df[
@@ -158,9 +164,9 @@ class TestPropertyEnricher:
         assert metrics['closed_violations'] == 1
         assert len(metrics['violation_types']) > 0
 
-    def test_get_top_opportunities(self, sample_csv_file, sample_properties):
+    def test_get_top_opportunities(self, sample_violations_df, sample_properties):
         """Test filtering and ranking opportunities"""
-        enricher = PropertyEnricher(sample_csv_file)
+        enricher = PropertyEnricher(sample_violations_df)
 
         enriched = enricher.enrich_properties(sample_properties)
 
@@ -175,9 +181,9 @@ class TestPropertyEnricher:
             for i in range(len(opportunities) - 1):
                 assert opportunities[i]['violation_count'] >= opportunities[i+1]['violation_count']
 
-    def test_get_top_opportunities_high_threshold(self, sample_csv_file, sample_properties):
+    def test_get_top_opportunities_high_threshold(self, sample_violations_df, sample_properties):
         """Test filtering with high violation threshold"""
-        enricher = PropertyEnricher(sample_csv_file)
+        enricher = PropertyEnricher(sample_violations_df)
 
         enriched = enricher.enrich_properties(sample_properties)
 
@@ -186,9 +192,9 @@ class TestPropertyEnricher:
 
         assert len(opportunities) == 0
 
-    def test_enrich_multiple_properties(self, sample_csv_file):
+    def test_enrich_multiple_properties(self, sample_violations_df):
         """Test enriching multiple properties"""
-        enricher = PropertyEnricher(sample_csv_file)
+        enricher = PropertyEnricher(sample_violations_df)
 
         properties = [
             {

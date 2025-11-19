@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 from src.wholesaler.utils.logger import get_logger
+from src.wholesaler.ml.models import PropertyFeatures, predict_lead_probability
 
 logger = get_logger(__name__)
 
@@ -47,11 +48,18 @@ class LeadScorer:
     - Time urgency
     """
 
-    # Tier thresholds
-    TIER_A_THRESHOLD = 75  # Hot leads
-    TIER_B_THRESHOLD = 60  # Good leads
+    # Tier thresholds (increased to ensure only high-quality leads in Tier A)
+    TIER_A_THRESHOLD = 60  # Hot leads (highest quality only)
+    TIER_B_THRESHOLD = 50  # Good leads
     TIER_C_THRESHOLD = 40  # Moderate leads
     # Below 40 = Tier D (Low priority)
+
+    # Seed type scoring multipliers
+    SEED_TYPE_WEIGHTS = {
+        'tax_sale': 1.2,        # Boost tax sale seeds (highest priority)
+        'foreclosure': 1.15,    # Boost foreclosure seeds
+        'code_violation': 1.0,  # Standard weight for code violation seeds
+    }
 
     def __init__(self):
         """Initialize lead scorer."""
@@ -86,6 +94,13 @@ class LeadScorer:
         # Determine tier
         tier = self._determine_tier(total_score)
 
+        # Blend ML probability if available
+        property_features = self._build_features(merged_property, total_score, distress_score, value_score, location_score)
+        ml_probability = predict_lead_probability(property_features) if property_features else None
+
+        if ml_probability is not None:
+            total_score = self._blend_with_ml(total_score, ml_probability, reasons)
+
         result = LeadScore(
             total_score=round(total_score, 2),
             distress_score=round(distress_score, 2),
@@ -104,6 +119,192 @@ class LeadScorer:
         )
 
         return result
+
+    def score_seed_based_lead(self, enriched_data: Dict, seed_type: str) -> LeadScore:
+        """
+        Calculate lead score for a seed-based property from UnifiedEnrichmentPipeline.
+
+        Args:
+            enriched_data: Enriched data dict from enriched_seeds table
+            seed_type: Seed source type (tax_sale, code_violation, foreclosure)
+
+        Returns:
+            LeadScore with detailed breakdown
+        """
+        reasons = []
+
+        # Convert seed-based format to legacy format for scoring compatibility
+        merged_property = self._convert_seed_to_legacy_format(enriched_data, seed_type)
+
+        # Calculate component scores
+        distress_score = self._calculate_distress_score(merged_property, reasons)
+        value_score = self._calculate_value_score(merged_property, reasons)
+        location_score = self._calculate_location_score(merged_property, reasons)
+        urgency_score = self._calculate_urgency_score(merged_property, reasons)
+
+        # Apply seed type weighting
+        seed_weight = self.SEED_TYPE_WEIGHTS.get(seed_type, 1.0)
+        if seed_weight != 1.0:
+            reasons.append(f"Seed type: {seed_type} (weight: {seed_weight}x)")
+
+        # Weighted total score with seed type multiplier
+        total_score = (
+            distress_score * 0.35 +
+            value_score * 0.30 +
+            location_score * 0.20 +
+            urgency_score * 0.15
+        ) * seed_weight
+
+        # Determine tier
+        tier = self._determine_tier(total_score)
+
+        # ML blending (if available)
+        property_features = self._build_features(merged_property, total_score, distress_score, value_score, location_score)
+        ml_probability = predict_lead_probability(property_features) if property_features else None
+
+        if ml_probability is not None:
+            total_score = self._blend_with_ml(total_score, ml_probability, reasons)
+
+        result = LeadScore(
+            total_score=round(total_score, 2),
+            distress_score=round(distress_score, 2),
+            value_score=round(value_score, 2),
+            location_score=round(location_score, 2),
+            urgency_score=round(urgency_score, 2),
+            tier=tier,
+            reasons=reasons
+        )
+
+        logger.debug(
+            "seed_based_lead_scored",
+            parcel=enriched_data.get('parcel_id'),
+            seed_type=seed_type,
+            total_score=result.total_score,
+            tier=result.tier
+        )
+
+        return result
+
+    def _convert_seed_to_legacy_format(self, enriched_data: Dict, seed_type: str) -> Dict:
+        """
+        Convert seed-based enriched data to legacy merged_property format.
+
+        Args:
+            enriched_data: Enriched data from UnifiedEnrichmentPipeline
+            seed_type: Seed type
+
+        Returns:
+            Dict in legacy merged_property format
+        """
+        merged = {
+            'parcel_id_normalized': enriched_data.get('parcel_id'),
+            'parcel_id': enriched_data.get('parcel_id'),
+        }
+
+        # Add seed-specific data based on type
+        if seed_type == 'tax_sale':
+            merged['tax_sale'] = {
+                'tda_number': enriched_data.get('tda_number'),
+                'sale_date': enriched_data.get('sale_date'),
+                'deed_status': enriched_data.get('deed_status'),
+                'opening_bid': enriched_data.get('opening_bid'),
+            }
+
+        elif seed_type == 'foreclosure':
+            merged['foreclosure'] = {
+                'default_amount': enriched_data.get('default_amount'),
+                'opening_bid': enriched_data.get('opening_bid'),
+                'auction_date': enriched_data.get('auction_date'),
+                'lender_name': enriched_data.get('lender_name'),
+            }
+
+        elif seed_type == 'code_violation':
+            # Code violation seeds don't have tax_sale/foreclosure data
+            # but enrichment should have violation data
+            pass
+
+        # Add property record data if available
+        if any(k in enriched_data for k in ['total_mkt', 'total_assd', 'equity_percent', 'owner_name']):
+            merged['property_record'] = {
+                'owner_name': enriched_data.get('owner_name'),
+                'total_mkt': enriched_data.get('total_mkt'),
+                'total_assd': enriched_data.get('total_assd'),
+                'taxable': enriched_data.get('taxable'),
+                'taxes': enriched_data.get('taxes'),
+                'equity_percent': enriched_data.get('equity_percent'),
+                'tax_rate': enriched_data.get('tax_rate'),
+                'year_built': enriched_data.get('year_built'),
+                'living_area': enriched_data.get('living_area'),
+                'lot_size': enriched_data.get('lot_size'),
+                'city': enriched_data.get('city'),
+                'zip_code': enriched_data.get('zip_code'),
+                'property_use': enriched_data.get('property_use'),
+            }
+
+        # Add enrichment data (violations, nearby data)
+        if any(k in enriched_data for k in ['violation_count', 'most_recent_violation', 'nearby_violations']):
+            merged['enrichment'] = {
+                'nearby_violations': enriched_data.get('violation_count', 0) or enriched_data.get('nearby_violations', 0),
+                'nearby_open_violations': enriched_data.get('nearby_open_violations', 0),
+                'most_recent_violation': enriched_data.get('most_recent_violation'),
+            }
+
+        # Add coordinates
+        merged['latitude'] = enriched_data.get('latitude')
+        merged['longitude'] = enriched_data.get('longitude')
+        merged['city'] = enriched_data.get('city')
+
+        return merged
+
+    def _build_features(
+        self,
+        prop: Dict,
+        total_score: float,
+        distress_score: float,
+        value_score: float,
+        location_score: float,
+    ) -> Optional[PropertyFeatures]:
+        """Construct PropertyFeatures for ML scorer."""
+        parcel_id = prop.get('parcel_id_normalized') or prop.get('parcel_id')
+        property_record = prop.get('property_record', {})
+
+        if not parcel_id:
+            return None
+
+        return PropertyFeatures(
+            parcel_id=parcel_id,
+            city=property_record.get('city') or prop.get('city') or "Orlando",
+            zip_code=property_record.get('zip_code') or prop.get('zip_code'),
+            property_use=property_record.get('property_use'),
+            total_score=total_score,
+            distress_score=distress_score,
+            value_score=value_score,
+            location_score=location_score,
+            has_tax_sale='tax_sale' in prop,
+            has_foreclosure='foreclosure' in prop,
+            tax_sale_opening_bid=prop.get('tax_sale', {}).get('opening_bid'),
+            foreclosure_judgment=prop.get('foreclosure', {}).get('default_amount'),
+        )
+
+    def _blend_with_ml(self, total_score: float, ml_probability: float, reasons: List[str]) -> float:
+        """
+        Combine heuristic score with ML probability.
+
+        Args:
+            total_score: Heuristic total score
+            ml_probability: Probability of Tier A (0-1)
+            reasons: Mutable list of scoring reasons
+
+        Returns:
+            Adjusted total score
+        """
+        adjustment = (ml_probability - 0.5) * 40  # range roughly [-20, +20]
+        if adjustment > 0:
+            reasons.append(f"ML boost: {ml_probability:.2f} Tier-A likelihood")
+        else:
+            reasons.append(f"ML caution: {ml_probability:.2f} Tier-A likelihood")
+
+        return max(0.0, min(100.0, total_score + adjustment))
 
     def _calculate_distress_score(self, prop: Dict, reasons: List[str]) -> float:
         """

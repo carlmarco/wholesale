@@ -52,6 +52,7 @@ class TaxSaleScraper:
             "where": "1=1",
             "outFields": "USER_TDA_NUM,USER_Sale_Date,USER_Deed_Status,USER_PARCEL",
             "outSR": 4326,
+            "orderByFields": "USER_Sale_Date DESC",
             "f": "geojson"
         }
 

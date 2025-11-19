@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-11-12T11:54:56.945987",
+  "checks": {
+    "scoring_integration": {
+      "status": "PASS",
+      "seed_based_properties": 0,
+      "total_lead_scores": 186,
+      "tier_distribution": {
+        "D": 10,
+        "A": 13,
+        "C": 134,
+        "B": 29
+      }
+    }
+  },
+  "warnings": [
+    "No seed-based properties yet - pipeline not fully integrated"
+  ],
+  "errors": []
+}

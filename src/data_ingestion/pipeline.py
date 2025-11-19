@@ -6,6 +6,7 @@ to identify high-value wholesale opportunities.
 """
 from tax_sale_scraper import TaxSaleScraper
 from enrichment import PropertyEnricher
+from src.wholesaler.scrapers.code_violation_scraper import CodeViolationScraper
 
 
 def main():
@@ -39,7 +40,14 @@ def main():
     print("Phase 2: Enriching with Code Enforcement Data...")
     print("-" * 80)
 
-    enricher = PropertyEnricher('data/code_enforcement_data.csv')
+    violation_scraper = CodeViolationScraper()
+    violations_df = violation_scraper.fetch_violations(limit=50000)
+
+    if violations_df.empty:
+        print("[ERROR] No code enforcement data fetched. Exiting.")
+        return
+
+    enricher = PropertyEnricher(violations_df)
     enriched_properties = enricher.enrich_properties(properties)
 
     print(f"[SUCCESS] Enrichment complete\n")

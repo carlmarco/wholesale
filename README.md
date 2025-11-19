@@ -2,6 +2,26 @@
 
 Production-grade automated real estate wholesaling system for identifying undervalued investment opportunities in Orlando, FL using public data sources and distress signal analysis.
 
+## Quick Start
+
+```bash
+# Clone and setup
+git clone <repo-url>
+cd wholesaler
+make setup
+
+# Launch the dashboard
+make dashboard
+```
+
+Dashboard will be available at **http://localhost:8501**
+
+For all available commands, run `make help`
+
+> **Note:** The Streamlit dashboard reads the FastAPI endpoint from the `API_BASE_URL` environment variable.  
+> - Local development defaults to `http://localhost:8000`.  
+> - Inside Docker (compose), it should be set to `http://api:8000` so the container can reach the API service.
+
 ## Project Goal
 
 Identify profitable wholesale opportunities where:
@@ -86,31 +106,25 @@ wholesaler/
 ### Data Pipeline Flow
 
 ```
-1. Data Ingestion (Scrapers)
-   ├── Tax Sales (86 properties)
-   ├── Foreclosures (active lis pendens)
-   ├── Property Records (valuations, taxes)
-   └── Code Violations (40K+ records)
+1. Seed Collection (Dual Pools)
+   ├── Tax Sale Candidates (ArcGIS)
+   └── Distress Candidates (Code Violations + Foreclosures)
           ↓
-2. Coordinate Transformation
-   └── State Plane (EPSG:2881) → WGS84 (EPSG:4326)
+2. Unified Enrichment Pipeline
+   ├── Coordinate transformation + address normalization
+   ├── Code violation proximity metrics
+   └── Merge with property records & tax/foreclosure data
           ↓
-3. Geographic Enrichment
-   └── Find violations within 0.25 mile radius
+3. Data Deduplication
+   └── One record per normalized parcel ID with seed_type metadata
           ↓
-4. Address Standardization
-   └── Normalize addresses, parcel IDs
+4. Lead Scoring (0-100, Tiers A/B/C/D)
+   ├── Distress Score (tax sale, foreclosure, violations)
+   ├── Value Score (equity, market value, tax burden)
+   ├── Location Score (neighborhood condition)
+   └── Urgency Score (auction dates, timelines)
           ↓
-5. Data Deduplication
-   └── Merge sources by normalized parcel ID
-          ↓
-6. Lead Scoring (0-100, Tiers A/B/C/D)
-   ├── Distress Score (35%): tax sale, foreclosure, violations
-   ├── Value Score (30%): equity, market value, tax burden
-   ├── Location Score (20%): neighborhood condition
-   └── Urgency Score (15%): auction dates, timelines
-          ↓
-7. Ranked Investment Opportunities
+5. Ranked Investment Opportunities + ML ARV estimates
 ```
 
 ## Setup
@@ -118,9 +132,28 @@ wholesaler/
 ### Prerequisites
 
 - Python 3.13+
-- Virtual environment
+- Docker & Docker Compose (for full system)
+- Make (optional, for simplified commands)
 
-### Installation
+### Quick Setup (Recommended)
+
+Using the Makefile for automated setup:
+
+```bash
+# Complete setup (creates .env, installs dependencies, creates directories)
+make setup
+
+# Edit .env file with your credentials
+nano .env
+
+# Launch the complete system (database, Airflow, dashboard)
+make start
+
+# View dashboard
+open http://localhost:8501
+```
+
+### Manual Setup
 
 ```bash
 # Create virtual environment
@@ -129,17 +162,87 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Copy environment template
+cp .env.example .env
+
+# Edit .env and add your credentials
+nano .env
+
+# Start Docker services
+docker-compose up -d
 ```
 
 ### Configuration
 
-1. Copy `.env.example` to `.env`
-2. Add your Socrata API credentials:
-
+1. **API Credentials** - Add to `.env`:
 ```bash
 SOCRATA_API_KEY=your_key_here
 SOCRATA_API_SECRET=your_secret_here
 SOCRATA_APP_TOKEN=your_token_here
+```
+
+2. **Alert Settings** (optional) - See [ALERTS_SETUP.md](ALERTS_SETUP.md):
+```bash
+ALERT_ENABLE_EMAIL=true
+ALERT_EMAIL=your-email@example.com
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+```
+
+## Makefile Commands
+
+The Makefile provides convenient shortcuts for all common operations:
+
+```bash
+# View all available commands
+make help
+
+# Dashboard & Services
+make dashboard          # Launch dashboard (starts all services)
+make stop              # Stop all services
+make restart           # Restart all services
+make status            # Show service status
+
+# Data Pipeline
+make scrape-data       # Download fresh data from APIs
+make load-data         # Load data into database
+make score-leads       # Run lead scoring
+make pipeline-full     # Run complete pipeline
+make ingest-seeds      # Collect hybrid seed pools (tax sales, foreclosures, violations)
+make enrich-seeds      # Enrich seeds, write parquet, and load staging tables
+make load-enriched-seeds # Reload enriched_seeds.parquet into the database
+
+# Machine Learning
+make train-models      # Train ARV and lead models
+
+# Database
+make db-shell          # Open PostgreSQL shell
+make db-migrate        # Create new migration
+make db-upgrade        # Run migrations
+make stats             # Show database statistics
+
+# Testing & Development
+make test              # Run all tests
+make test-cov          # Run tests with coverage
+make lint              # Run code linting
+make format            # Auto-format code
+
+# Monitoring
+make logs              # View all logs
+make logs-dashboard    # View dashboard logs
+make logs-airflow      # View Airflow logs
+make health            # Check service health
+
+# Airflow
+make airflow-trigger-all  # Manually trigger all DAGs
+make airflow-unpause      # Enable automatic scheduling
+make airflow-list         # List all DAGs
+
+# Cleanup
+make clean             # Remove temporary files
+make clean-all         # Remove all generated files
 ```
 
 ## Usage
@@ -173,6 +276,35 @@ scraper = PropertyScraper()
 property = scraper.fetch_by_parcel("123456789012345")
 ```
 
+### Seed-Based Enrichment Pipeline
+
+```bash
+# Step 1: collect fresh seeds from every ingestion source
+make ingest-seeds
+
+# Step 2: enrich seeds (includes geo proximity metrics), write parquet, and load staging tables
+make enrich-seeds
+
+# (Optional) Reload an existing parquet without re-enriching
+make load-enriched-seeds
+```
+
+The enrichment CLI mirrors the Airflow DAG. You can run it manually for custom scenarios:
+
+```bash
+.venv/bin/python scripts/enrich_seeds.py \
+  --seeds-path data/processed/seeds.json \
+  --output data/processed/enriched_seeds.parquet \
+  --geo-csv data/code_enforcement_data.csv \
+  --geo-radius 0.5 \
+  --load
+```
+
+Flags:
+- `--load`: immediately push the parquet rows into `enriched_seeds`, `properties`, `tax_sales`, and `foreclosures`.
+- `--disable-geo`: opt-out of geo proximity metrics (enabled by default). Override data/radius with `--geo-csv` / `--geo-radius`.
+- `--output` / `--seeds-path`: customize file locations if you are testing alternate datasets.
+
 ### Geographic Enrichment
 
 ```python
@@ -205,6 +337,18 @@ ranked_leads = scorer.rank_leads(scored_leads)
 # Top tier A leads
 tier_a_leads = [lead for lead in ranked_leads if lead[1].tier == "A"]
 ```
+
+### Priority Leads API
+
+The API exposes an additional endpoint that surfaces high-probability leads using the new hybrid/logistic scoring blend:
+
+```
+GET /api/v1/leads/priority?limit=50
+```
+
+Each item includes `priority_score`, the hybrid tier, and logistic probability so the dashboard/team can focus on the most actionable properties even when legacy tiers remain low.
+
+The Streamlit dashboard also includes a **Priority Leads** tab that surfaces the same data with download support.
 
 ## Testing
 

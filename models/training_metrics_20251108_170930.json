@@ -1,0 +1,13 @@
+{
+  "timestamp": "20251108_170930",
+  "models": {
+    "arv": {
+      "status": "failed",
+      "artifact": null
+    },
+    "lead": {
+      "status": "success",
+      "artifact": "lead_model_20251108_170930.joblib"
+    }
+  }
+}

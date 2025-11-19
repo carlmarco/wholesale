@@ -1,0 +1,238 @@
+services:
+  # PostgreSQL with PostGIS extension
+  postgres:
+    platform: linux/amd64
+    image: postgis/postgis:16-3.5
+    container_name: wholesaler_postgres
+    environment:
+      POSTGRES_DB: wholesaler
+      POSTGRES_USER: wholesaler_user
+      POSTGRES_PASSWORD: wholesaler_pass
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wholesaler_user -d wholesaler"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wholesaler_network
+
+  # Redis for Airflow message broker
+  redis:
+    image: redis:7.4-alpine
+    container_name: wholesaler_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wholesaler_network
+
+  # Airflow webserver
+  airflow-webserver:
+    image: apache/airflow:2.10.4-python3.11
+    container_name: wholesaler_airflow_webserver
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://wholesaler_user:wholesaler_pass@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://wholesaler_user:wholesaler_pass@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: 'UKMzEm3yIuFYEq92mCS1Nw0YZ-7GFBR5cG-PzJBPYX4='
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'wholesaler_secret_key_change_in_production'
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - .:/opt/airflow/project
+    ports:
+      - "8080:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - wholesaler_network
+
+  # Airflow scheduler
+  airflow-scheduler:
+    image: apache/airflow:2.10.4-python3.11
+    container_name: wholesaler_airflow_scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://wholesaler_user:wholesaler_pass@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://wholesaler_user:wholesaler_pass@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: 'UKMzEm3yIuFYEq92mCS1Nw0YZ-7GFBR5cG-PzJBPYX4='
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - .:/opt/airflow/project
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - wholesaler_network
+
+  # Airflow worker (Celery)
+  airflow-worker:
+    image: apache/airflow:2.10.4-python3.11
+    container_name: wholesaler_airflow_worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://wholesaler_user:wholesaler_pass@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://wholesaler_user:wholesaler_pass@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: 'UKMzEm3yIuFYEq92mCS1Nw0YZ-7GFBR5cG-PzJBPYX4='
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - .:/opt/airflow/project
+    command: celery worker
+    healthcheck:
+      test: ["CMD-SHELL", 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - wholesaler_network
+
+  # Airflow init (run migrations, create admin user)
+  airflow-init:
+    image: apache/airflow:2.10.4-python3.11
+    container_name: wholesaler_airflow_init
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://wholesaler_user:wholesaler_pass@postgres/airflow
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://wholesaler_user:wholesaler_pass@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: 'UKMzEm3yIuFYEq92mCS1Nw0YZ-7GFBR5cG-PzJBPYX4='
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: admin
+      _AIRFLOW_WWW_USER_EMAIL: admin@example.com
+      _AIRFLOW_WWW_USER_FIRSTNAME: Admin
+      _AIRFLOW_WWW_USER_LASTNAME: User
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init
+        airflow db migrate
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com
+    networks:
+      - wholesaler_network
+
+  # FastAPI Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: wholesaler_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://wholesaler_user:wholesaler_pass@postgres:5432/wholesaler
+      REDIS_URL: redis://redis:6379/0
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - ./models:/app/models
+    ports:
+      - "8000:8000"
+    command: uvicorn src.wholesaler.api.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - wholesaler_network
+
+  # Streamlit Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: wholesaler_dashboard
+    depends_on:
+      api:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      API_BASE_URL: http://api:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8501:8501"
+    command: streamlit run src/wholesaler/frontend/app.py --server.port=8501 --server.address=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - wholesaler_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  wholesaler_network:
+    driver: bridge
