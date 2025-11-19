@@ -31,19 +31,29 @@ ARV * 0.7 - repair_costs - acquisition_cost > $15,000 profit
 
 ## Current Status
 
-**Phase 1: COMPLETE** - Foundation & Core Pipeline
+**Phase 3.6: COMPLETE** - Profitability Validation & ML Infrastructure
 
-- Tax sale property scraper (ArcGIS API)
-- Foreclosure data scraper (ArcGIS API)
-- Property records scraper (Property Appraiser API)
-- Code enforcement violation data (Socrata API)
+### Phase 1-3.5 Completed Features
+- Multi-source seed ingestion (tax sales, foreclosures, code violations)
 - Geographic enrichment with coordinate transformation
-- Address standardization
-- Data deduplication pipeline
-- Lead scoring algorithm
-- Comprehensive unit tests (115 passing)
+- Address standardization and data deduplication
+- PostgreSQL database with SQLAlchemy ORM
+- Airflow orchestration for daily ETL pipelines
+- FastAPI REST API with authentication
+- Streamlit dashboard with interactive lead analysis
+- Comprehensive unit tests (115+ passing)
 - Structured logging with structlog
 - Configuration management with Pydantic
+
+### Phase 3.6 New Features (Conservative Profitability Guardrails)
+- **Profitability Bucket Scoring** - 4-bucket weighted system with profit validation
+- **Conservative ARV Estimation** - Market value-based estimates (no MLS dependency)
+- **Repair Cost Modeling** - Violation-based repair estimates with property age adjustments
+- **Acquisition Cost Analysis** - Seed-type aware cost estimation (tax sale, foreclosure, direct)
+- **Tier Guardrails** - Unprofitable properties cannot achieve Tier A/B status
+- **ML Feature Store** - Automated feature engineering and materialization
+- **Model Registry** - Version tracking and lifecycle management for ML models
+- **Hybrid Scoring** - Blends heuristic bucket scores with ML predictions
 
 ## Data Sources
 
@@ -70,7 +80,7 @@ wholesaler/
 │   ├── settings.py              # Pydantic configuration management
 │   └── __init__.py
 ├── src/
-│   ├── wholesaler/              # New modular architecture
+│   ├── wholesaler/              # Main application package
 │   │   ├── scrapers/            # Data ingestion from APIs
 │   │   │   ├── tax_sale_scraper.py
 │   │   │   ├── foreclosure_scraper.py
@@ -80,25 +90,73 @@ wholesaler/
 │   │   ├── transformers/        # Data transformation
 │   │   │   ├── coordinate_transformer.py  # State Plane → WGS84
 │   │   │   └── address_standardizer.py    # Address normalization
-│   │   ├── models/              # Pydantic data models
-│   │   │   ├── property.py      # TaxSaleProperty, EnrichedProperty
-│   │   │   ├── foreclosure.py   # ForeclosureProperty
-│   │   │   └── property_record.py  # PropertyRecord
-│   │   ├── pipelines/           # Data pipelines
-│   │   │   ├── deduplication.py    # Merge by parcel ID
-│   │   │   └── lead_scoring.py     # Score investment opportunities
+│   │   ├── db/                  # Database layer
+│   │   │   ├── models.py        # SQLAlchemy ORM models
+│   │   │   ├── repository.py    # Data access layer
+│   │   │   └── session.py       # Database sessions
+│   │   ├── etl/                 # ETL loaders and transformers
+│   │   │   ├── loaders.py       # Bulk data loading
+│   │   │   └── seed_merger.py   # Seed deduplication
+│   │   ├── scoring/             # Lead scoring engines
+│   │   │   ├── scorers.py       # HybridBucketScorer
+│   │   │   └── profitability_scorer.py  # ConservativeProfitabilityBucket
+│   │   ├── ml/                  # Machine learning infrastructure
+│   │   │   ├── features/        # Feature engineering
+│   │   │   │   └── feature_store.py  # FeatureStoreBuilder
+│   │   │   ├── training/        # Model training
+│   │   │   │   ├── train_distress_classifier.py
+│   │   │   │   ├── train_sale_probability.py
+│   │   │   │   └── model_registry.py  # Model versioning
+│   │   │   └── inference/       # Model serving
+│   │   │       └── hybrid_ml_scorer.py  # Production ML inference
+│   │   ├── api/                 # FastAPI application
+│   │   │   ├── main.py          # API entry point
+│   │   │   ├── routers/         # API endpoints
+│   │   │   │   ├── leads.py
+│   │   │   │   ├── predictions.py
+│   │   │   │   └── stats.py
+│   │   │   └── schemas.py       # Pydantic request/response models
+│   │   ├── frontend/            # Streamlit dashboard
+│   │   │   ├── app.py           # Dashboard entry point
+│   │   │   ├── components/      # UI components
+│   │   │   └── pages/           # Multi-page sections
 │   │   └── utils/               # Shared utilities
 │   │       ├── logger.py        # Structured logging
-│   │       ├── geo_utils.py     # Distance calculations
-│   │       └── adapters.py      # Backward compatibility
+│   │       └── geo_utils.py     # Distance calculations
 │   └── data_ingestion/          # Legacy code (maintained for compatibility)
-├── tests/                       # 115 unit tests
-│   ├── wholesaler/              # Tests for new architecture
-│   └── data_ingestion/          # Tests for legacy code
+├── dags/                        # Airflow DAGs
+│   ├── daily_property_ingestion.py
+│   ├── daily_lead_scoring.py
+│   ├── ml_feature_materialization.py
+│   ├── ml_model_training.py
+│   └── tier_a_alert_notifications.py
+├── tests/                       # 115+ unit tests
+│   ├── wholesaler/              # Tests for main package
+│   │   ├── scoring/             # Scoring tests
+│   │   ├── etl/                 # ETL tests
+│   │   └── pipelines/           # Pipeline tests
+│   └── dags/                    # DAG tests
+├── alembic/                     # Database migrations
+│   └── versions/                # Migration scripts
+├── scripts/                     # Utility scripts
+│   ├── enrich_seeds.py          # Seed enrichment CLI
+│   ├── run_lead_scoring.py      # Manual scoring runner
+│   └── load_enriched_seeds.py   # Data loading helper
+├── docs/                        # Documentation
+│   ├── phases/                  # Phase planning docs
+│   ├── profitability/           # Profitability analysis
+│   ├── summaries/               # Executive summaries
+│   └── architecture/            # Architecture docs
 ├── data/                        # Data files (gitignored)
+│   ├── raw/                     # Raw scraped data
+│   ├── processed/               # Enriched datasets (parquet)
+│   └── features/                # ML feature snapshots
+├── models/                      # Trained ML models (gitignored)
 ├── .env                         # Environment variables (gitignored)
 ├── .env.example                 # Template for configuration
 ├── requirements.txt             # Python dependencies
+├── docker-compose.yml           # Docker services
+├── Makefile                     # Development commands
 ├── pytest.ini                   # Test configuration
 └── README.md                    # This file
 ```
@@ -115,16 +173,28 @@ wholesaler/
    ├── Code violation proximity metrics
    └── Merge with property records & tax/foreclosure data
           ↓
-3. Data Deduplication
+3. Data Deduplication & Storage
    └── One record per normalized parcel ID with seed_type metadata
           ↓
-4. Lead Scoring (0-100, Tiers A/B/C/D)
-   ├── Distress Score (tax sale, foreclosure, violations)
-   ├── Value Score (equity, market value, tax burden)
-   ├── Location Score (neighborhood condition)
-   └── Urgency Score (auction dates, timelines)
+4. Lead Scoring (0-100, Tiers A/B/C/D with Profitability Guardrails)
+   ├── Distress Bucket (55%): Violations, recency, severity
+   ├── Disposition Bucket (15%): Tax sale, foreclosure signals
+   ├── Equity Bucket (10%): Market value, equity ratio
+   └── Profitability Bucket (20%): ARV-based profit calculation ← NEW!
           ↓
-5. Ranked Investment Opportunities + ML ARV estimates
+5. Profitability Validation (Conservative Guardrails)
+   ├── ARV Estimation (market value + seed-type multiplier)
+   ├── Repair Cost Estimation (violation-based + age adjustments)
+   ├── Acquisition Cost Analysis (seed-type specific)
+   └── 70% Rule Validation: (ARV × 0.70) - Repairs - Acquisition > $15K
+          ↓
+6. ML Feature Engineering & Inference
+   ├── Feature Store Materialization (25+ features)
+   ├── Model Registry (distress classifier, sale probability)
+   └── Hybrid ML Scoring (blends heuristics + predictions)
+          ↓
+7. Ranked Investment Opportunities
+   └── Tier A/B leads guaranteed profitable by conservative math
 ```
 
 ## Setup
@@ -244,6 +314,64 @@ make airflow-list         # List all DAGs
 make clean             # Remove temporary files
 make clean-all         # Remove all generated files
 ```
+
+## Airflow Workflows
+
+The system runs 7 automated DAGs for daily ETL, scoring, and ML training:
+
+### Daily Workflows
+
+1. **daily_property_ingestion** (2:00 AM)
+   - Fetches fresh data from all APIs (tax sales, foreclosures, violations)
+   - Saves raw data to staging tables
+   - Dependencies: None (runs first)
+
+2. **daily_transformation_pipeline** (3:00 AM)
+   - Enriches properties with geo proximity metrics
+   - Merges data sources by parcel ID
+   - Loads deduplicated data to main tables
+   - Dependencies: Waits for daily_property_ingestion
+
+3. **daily_lead_scoring** (4:00 AM)
+   - Scores all properties using HybridBucketScorer
+   - Applies profitability validation
+   - Ranks leads into Tiers A/B/C/D
+   - Creates daily history snapshots
+   - Dependencies: Waits for daily_transformation_pipeline
+
+4. **ml_feature_materialization** (5:00 AM)
+   - Extracts 25+ features from enriched properties
+   - Exports to Parquet for offline training
+   - Materializes to ml_feature_store table for real-time inference
+   - Dependencies: Waits for daily_lead_scoring
+
+5. **tier_a_alert_notifications** (6:00 AM)
+   - Identifies new Tier A leads since yesterday
+   - Sends email alerts with lead details
+   - Filters out already-contacted leads
+   - Dependencies: Waits for daily_lead_scoring
+
+### Weekly Workflows
+
+6. **ml_model_training** (Sunday 2:00 AM)
+   - Trains distress classifier (LightGBM)
+   - Trains sale probability model (Logistic Regression)
+   - Registers models in model_registry table
+   - Promotes models if metrics exceed thresholds
+   - Cleans up old model versions
+   - Dependencies: None (runs weekly)
+
+7. **seed_based_ingestion** (Manual trigger)
+   - Alternative ingestion using seed-based strategy
+   - Fetches seeds → enriches → merges → scores
+   - Used for custom data scenarios
+   - Dependencies: None
+
+**Monitoring:**
+- View DAG status: `make airflow-list`
+- Trigger all DAGs: `make airflow-trigger-all`
+- Enable scheduling: `make airflow-unpause`
+- View logs: `make logs-airflow`
 
 ## Usage
 
@@ -373,36 +501,91 @@ pytest tests/ -v -m "not integration"
 
 ## Lead Scoring Algorithm
 
-### Components (Weighted)
+### 4-Bucket Weighted System (Phase 3.6)
 
-1. **Distress Score (35%)**
-   - Tax sale status: +40 points
-   - Foreclosure status: +40 points
-   - Code violations nearby: up to +20 points
-   - Open violations: +3 points
+The scoring system uses weighted buckets with conservative profitability validation:
 
-2. **Value Score (30%)**
-   - High equity (>200%): +40 points
-   - Target price range ($100K-$400K): +30 points
-   - Low tax burden: +15 points
-   - Good size: +15 points
+1. **Distress Bucket (55% weight)**
+   - Violation count: 10 points per violation (clamped 0-100)
+   - Open violations: +12 points each
+   - Recent violations: +25 points for recency
+   - Measures: Property distress signals and maintenance issues
 
-3. **Location Score (20%)**
-   - Clean neighborhood: +30 points
-   - Violation density: ±20 points
-   - Proximity to issues: ±10 points
+2. **Disposition Bucket (15% weight)**
+   - Tax sale status: +60 points
+   - Foreclosure status: +45 points
+   - Default amount bonus: up to +20 points based on debt size
+   - Code violation seed type: +25 points
+   - Measures: Forced sale likelihood and urgency
 
-4. **Urgency Score (15%)**
-   - Foreclosure auction scheduled: +50 points
-   - Tax sale date set: +40 points
-   - Open violations: +10 points
+3. **Equity Bucket (10% weight)**
+   - High equity (200%+): +50 points
+   - Medium equity (150-199%): +35 points
+   - Low equity (120-149%): +20 points
+   - Target price range ($80K-$450K): +30 points
+   - Measures: Financial leverage and deal feasibility
 
-### Tier System
+4. **Profitability Bucket (20% weight)** ← NEW in Phase 3.6
+   - Conservative ARV estimation using market value
+   - Repair cost calculation based on violations + property age
+   - Acquisition cost based on seed type (tax sale, foreclosure, direct)
+   - **70% Rule**: `(ARV × 0.70) - Repairs - Acquisition`
+   - Score 50-100 if profit ≥ $15K, otherwise 0
+   - Measures: Actual deal profitability with conservative assumptions
 
-- **Tier A (75-100):** Hot leads requiring immediate action
-- **Tier B (60-74):** Good leads, high priority
-- **Tier C (40-59):** Moderate leads, review
-- **Tier D (0-39):** Low priority, passive monitoring
+**Additional Bonuses:**
+- Tax sale status: +15 points
+- Foreclosure status: +10 points
+
+### Tier System with Profitability Guardrails
+
+- **Tier A (60+):** Premium leads - **MUST be profitable** (profit ≥ $15K)
+- **Tier B (45-59):** Strong leads - **MUST be profitable** (profit ≥ $15K)
+- **Tier C (32-44):** Moderate leads - Profitability optional
+- **Tier D (<32):** Low priority - Passive monitoring
+
+**Guardrail Logic:**
+If a property scores 60+ but fails profitability validation (profit < $15K), it is automatically downgraded to Tier C or D. This prevents high-distress but unprofitable properties from consuming team resources.
+
+### Conservative Profitability Calculation
+
+Phase 3.6 implements conservative "guardrail" math to ensure Tier A/B leads are actually profitable:
+
+**ARV Estimation (Conservative, No MLS Dependency):**
+- Tax Sale properties: Market Value × 1.10 (10% upside)
+- Foreclosure properties: Market Value × 1.12 (12% upside)
+- Direct/Code Violation: Market Value × 1.06 (6% upside)
+- Fallback: Assessed Value × 1.25 if market value unavailable
+
+**Repair Cost Estimation:**
+- Base cost: $25/sqft for cosmetic rehab (minimum $15K)
+- Light distress (<5 violations): +$5/sqft
+- Heavy distress (5+ violations): +$15/sqft
+- Pre-1980 properties: +$10/sqft for age-related issues
+
+**Acquisition Cost:**
+- Tax Sale: Opening bid or taxes owed
+- Foreclosure: Default amount or opening bid
+- Direct: Assumes 50% of ARV (conservative negotiation estimate)
+
+**Profit Calculation:**
+```python
+end_buyer_price = (ARV × 0.70) - repair_costs
+projected_profit = end_buyer_price - acquisition_cost
+is_profitable = projected_profit >= $15,000
+```
+
+**Example:**
+```
+Property: 123 Main St (Tax Sale, 5 violations, built 1975)
+├─ Market Value: $200,000
+├─ ARV Estimate: $200K × 1.10 = $220,000
+├─ Repair Costs: 1,500 sqft × ($25 + $15 + $10) = $75,000
+├─ Acquisition: $50,000 (opening bid)
+├─ End Buyer Price: ($220K × 0.70) - $75K = $79,000
+├─ Projected Profit: $79K - $50K = $29,000 ✅
+└─ Result: PROFITABLE - Eligible for Tier A/B
+```
 
 ## Technical Stack
 
@@ -412,10 +595,29 @@ pytest tests/ -v -m "not integration"
 - Pydantic-settings 2.7.1 (configuration)
 - Structlog 25.1.0 (logging)
 
+**Database & ORM:**
+- PostgreSQL 15+
+- SQLAlchemy 2.0+ (ORM)
+- Alembic (migrations)
+
 **Data Processing:**
 - pandas 2.3.3
 - numpy 2.3.4
 - pyproj 3.7.2 (coordinate transformation)
+
+**Machine Learning:**
+- scikit-learn 1.5+ (training & inference)
+- LightGBM / XGBoost (gradient boosting)
+- joblib (model serialization)
+
+**Orchestration & ETL:**
+- Apache Airflow 2.10+ (workflow orchestration)
+- Celery (task queue)
+
+**Web Framework:**
+- FastAPI (REST API)
+- Streamlit (dashboard)
+- Uvicorn (ASGI server)
 
 **APIs & Scraping:**
 - requests 2.32.5
@@ -424,6 +626,11 @@ pytest tests/ -v -m "not integration"
 **Testing:**
 - pytest 8.4.2
 - pytest-cov 7.0.0
+
+**Infrastructure:**
+- Docker & Docker Compose
+- Redis (caching & Celery broker)
+- Nginx (reverse proxy)
 
 ## Development Principles
 
@@ -437,49 +644,77 @@ pytest tests/ -v -m "not integration"
 
 ## Roadmap
 
-### Phase 2: ETL Pipeline & Persistence
-- [ ] Database schema design (PostgreSQL)
-- [ ] SQLAlchemy ORM models
-- [ ] Data persistence layer
-- [ ] Airflow orchestration
-- [ ] Scheduled job execution
+### Phase 1: Foundation ✅ COMPLETE
+- ✅ Multi-source data scrapers (tax sales, foreclosures, property records, violations)
+- ✅ Geographic enrichment and coordinate transformation
+- ✅ Address standardization and normalization
+- ✅ Data deduplication by parcel ID
+- ✅ Initial lead scoring algorithm
+- ✅ Comprehensive unit tests (115+ tests)
 
-### Phase 3: Advanced Features
-- [ ] Property valuation ML model
-- [ ] Repair cost estimation
-- [ ] Comp analysis integration
-- [ ] ARV calculations
-- [ ] ROI projections
+### Phase 2: ETL Pipeline & Persistence ✅ COMPLETE
+- ✅ Database schema design (PostgreSQL)
+- ✅ SQLAlchemy ORM models
+- ✅ Data persistence layer with repositories
+- ✅ Airflow orchestration (7 DAGs)
+- ✅ Scheduled job execution (daily ingestion, scoring, notifications)
 
-### Phase 4: API & Serving
-- [ ] FastAPI endpoints
-- [ ] Redis caching
-- [ ] Authentication/authorization
-- [ ] Rate limiting
+### Phase 3: Advanced Features ✅ COMPLETE
+- ✅ Seed-based ingestion (dual-pool strategy)
+- ✅ Unified enrichment pipeline
+- ✅ Repair cost estimation (violation-based with age adjustments)
+- ✅ Conservative ARV calculations (market value multipliers)
+- ✅ Profitability validation (70% rule)
+- ✅ ML Feature Store (25+ features, automated materialization)
+- ✅ Model Registry (version tracking, promotion, lifecycle management)
 
-### Phase 5: Frontend & Monitoring
-- [ ] Streamlit dashboard
-- [ ] CloudWatch metrics
-- [ ] Alert system for Tier A leads
-- [ ] Performance monitoring
+### Phase 4: API & Serving ✅ COMPLETE
+- ✅ FastAPI endpoints (properties, leads, predictions, stats)
+- ✅ Redis caching
+- ✅ Authentication/authorization
+- ✅ Rate limiting
+- ✅ OpenAPI documentation
 
-### Phase 6: AWS Deployment
-- [ ] RDS for database
-- [ ] S3 for data storage
-- [ ] EC2/Lambda for compute
-- [ ] CloudWatch logging
+### Phase 5: Frontend & Monitoring ✅ COMPLETE
+- ✅ Streamlit dashboard (lead browsing, analytics, exports)
+- ✅ Alert system for Tier A leads (email notifications)
+- ✅ Performance monitoring (structured logging)
+- ✅ Airflow monitoring UI
+
+### Phase 6: Enhancement Opportunities 🔜 NEXT
+- [ ] **Phase 3.6.B**: MLS/Zillow integration for comp-based ARV (optional)
+- [ ] **Phase 4**: Advanced ML features
+  - [ ] Sale probability regression (more training data needed)
+  - [ ] Expected return estimation
+  - [ ] Market trend analysis
+- [ ] **Production Deployment**
+  - [ ] AWS RDS for database
+  - [ ] S3 for data storage
+  - [ ] EC2/Lambda for compute
+  - [ ] CloudWatch metrics & logging
+- [ ] **Data Quality**
+  - [ ] Automated data validation pipelines
+  - [ ] Feature drift detection
+  - [ ] Model performance monitoring
 
 ## Key Features
 
-**Multi-source data integration** from 4 different APIs
-**Coordinate transformation** from State Plane to WGS84
-**Geographic proximity matching** with Haversine distance
+**Multi-source data integration** from 4 different APIs with dual-pool seeding strategy
+**Coordinate transformation** from State Plane to WGS84 with 99.3% success rate
+**Geographic proximity matching** with Haversine distance for violation enrichment
 **Address standardization** across all data sources
-**Smart deduplication** by normalized parcel ID
-**Lead scoring algorithm** with 4-component weighting
-**Production logging** with structured JSON output
+**Smart deduplication** by normalized parcel ID with seed_type tracking
+**4-bucket lead scoring** with conservative profitability guardrails
+**Profitability validation** using 70% rule with conservative ARV estimates
+**ML Feature Store** with automated feature engineering and materialization
+**Model Registry** for version tracking and model lifecycle management
+**Hybrid ML scoring** blending heuristic buckets with ML predictions
+**Production logging** with structured JSON output via structlog
 **Type-safe models** with Pydantic validation
-**Comprehensive testing** with 115 unit tests
+**Comprehensive testing** with 115+ unit tests
+**Automated workflows** with 7 Airflow DAGs for daily ETL and weekly model training
+**Real-time API** with FastAPI serving lead predictions and analytics
+**Interactive dashboard** with Streamlit for lead browsing and analysis
 
 ## License
 
