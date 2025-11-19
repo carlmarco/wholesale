@@ -189,9 +189,9 @@ def upgrade() -> None:
                existing_nullable=True)
     op.drop_index(op.f('idx_properties_coordinates'), table_name='properties', postgresql_using='gist')
     op.drop_index(op.f('idx_properties_seed_type'), table_name='properties')
-    op.create_index('idx_properties_city', 'properties', ['city'], unique=False)
-    op.create_index('idx_properties_is_active', 'properties', ['is_active'], unique=False)
-    op.create_index('idx_properties_zip_code', 'properties', ['zip_code'], unique=False)
+    # op.create_index('idx_properties_city', 'properties', ['city'], unique=False)
+    # op.create_index('idx_properties_is_active', 'properties', ['is_active'], unique=False)
+    # op.create_index('idx_properties_zip_code', 'properties', ['zip_code'], unique=False)
     op.drop_column('properties', 'coordinates')
     # ### end Alembic commands ###
 
