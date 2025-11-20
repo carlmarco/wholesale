@@ -36,6 +36,8 @@ class PropertyRecord(BaseModel):
 
     parcel_number: Optional[str] = Field(None, description="Parcel number")
     situs_address: Optional[str] = Field(None, description="Property address")
+    situs_city: Optional[str] = Field(None, description="City")
+    situs_zip: Optional[str] = Field(None, description="Zip code")
     owner_name: Optional[str] = Field(None, description="Owner name")
     land_mkt: Optional[float] = Field(None, description="Land market value", ge=0)
     bldg_mkt: Optional[float] = Field(None, description="Building market value", ge=0)
@@ -108,6 +110,8 @@ class PropertyRecord(BaseModel):
         return {
             "parcel_number": self.parcel_number,
             "situs_address": self.situs_address,
+            "situs_city": self.situs_city,
+            "situs_zip": self.situs_zip,
             "owner_name": self.owner_name,
             "land_mkt": self.land_mkt,
             "bldg_mkt": self.bldg_mkt,

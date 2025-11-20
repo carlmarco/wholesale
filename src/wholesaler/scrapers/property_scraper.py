@@ -232,6 +232,92 @@ class PropertyScraper:
             logger.warning("property_not_found", parcel_number=parcel_number)
             return None
 
+    def fetch_by_coordinates(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_meters: int = 50
+    ) -> Optional[PropertyRecord]:
+        """
+        Fetch property by coordinates using spatial query (reverse geocoding).
+
+        Args:
+            latitude: WGS84 latitude
+            longitude: WGS84 longitude
+            radius_meters: Search radius in meters (default: 50m)
+
+        Returns:
+            PropertyRecord or None if not found
+        """
+        logger.info(
+            "fetching_property_by_coordinates",
+            lat=latitude,
+            lon=longitude,
+            radius=radius_meters
+        )
+
+        # ArcGIS spatial query parameters
+        params = {
+            "geometry": f"{longitude},{latitude}",  # Note: lon,lat order for ArcGIS
+            "geometryType": "esriGeometryPoint",
+            "inSR": 4326,  # WGS84
+            "spatialRel": "esriSpatialRelIntersects",
+            "distance": radius_meters,
+            "units": "esriSRUnit_Meter",
+            "outFields": (
+                "PARCEL,SITUS,SITUS_CITY,SITUS_ZIP,NAME1,NAME2,"
+                "LAND_MKT,BLDG_MKT,XFOB_MKT,TOTAL_MKT,TOTAL_ASSD,TOTAL_XMPT,"
+                "TAXABLE,TAXES,LIVING_AREA,ACREAGE,AYB,"
+                "BEDS,BATH,POOL,ZONING_CODE,LATITUDE,LONGITUDE"
+            ),
+            "outSR": 4326,
+            "f": "json",
+            "returnGeometry": "true",
+            "resultRecordCount": 1  # Only return closest match
+        }
+
+        try:
+            response = self.session.get(self.base_url, params=params, timeout=30)
+            response.raise_for_status()
+            json_data = response.json()
+
+            features_count = len(json_data.get("features", []))
+            logger.info(
+                "spatial_query_successful",
+                status_code=response.status_code,
+                features_count=features_count
+            )
+
+            if features_count == 0:
+                logger.warning(
+                    "no_property_found_at_coordinates",
+                    lat=latitude,
+                    lon=longitude,
+                    radius=radius_meters
+                )
+                return None
+
+            properties = self._parse_response(json_data)
+            if properties:
+                logger.info(
+                    "property_found_by_coordinates",
+                    parcel=properties[0].parcel_number,
+                    address=properties[0].situs_address
+                )
+                return properties[0]
+            
+            return None
+
+        except requests.RequestException as e:
+            logger.error(
+                "spatial_query_failed",
+                error=str(e),
+                error_type=type(e).__name__,
+                lat=latitude,
+                lon=longitude
+            )
+            return None
+
     def display_properties(
         self,
         properties: List[PropertyRecord],

@@ -99,8 +99,12 @@ class PropertyEnricher:
         most_recent = violations['casedt'].max()
         most_recent_str = most_recent.strftime('%Y-%m-%d') if pd.notna(most_recent) else None
 
-        avg_days = violations['days_to_resolve'].mean()
-        avg_days_clean = round(float(avg_days), 1) if pd.notna(avg_days) else None
+        # Convert to numeric, handling mixed types
+        if 'days_to_resolve' in violations.columns:
+            avg_days = pd.to_numeric(violations['days_to_resolve'], errors='coerce').mean()
+            avg_days_clean = round(float(avg_days), 1) if pd.notna(avg_days) else None
+        else:
+            avg_days_clean = None
 
         return {
             'violation_count': len(violations),

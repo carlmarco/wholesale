@@ -66,7 +66,13 @@ def collect_seeds(**context):
         pipeline = IngestionPipeline()
 
         # Collect seeds (writes to seeds.json)
-        stats = pipeline.run(output_path=str(SEEDS_FILE))
+        sources = ["tax_sales", "foreclosures", "code_violations"]
+        seeds = pipeline.run(sources=sources, output_path=SEEDS_FILE)
+
+        stats = {
+            'total_seeds': len(seeds),
+            'sources': sources,
+        }
 
         logger.info("seed_collection_completed", stats=stats)
 

@@ -13,6 +13,7 @@ from src.wholesaler.enrichment.property_enricher import PropertyEnricher
 from src.wholesaler.scrapers.code_violation_scraper import CodeViolationScraper
 from src.wholesaler.enrichers.geo_enricher import GeoPropertyEnricher
 from src.wholesaler.models.property import TaxSaleProperty
+from src.wholesaler.scrapers.property_scraper import PropertyScraper
 from src.wholesaler.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -41,6 +42,7 @@ class UnifiedEnrichmentPipeline:
             code_enforcement_csv_path=geo_csv_path,
             radius_miles=geo_radius_miles
         ) if enable_geo else None
+        self.property_scraper = PropertyScraper()
 
     def run(self, seeds: List[SeedRecord]) -> List[Dict[str, Any]]:
         tax_sale_payloads = [
@@ -53,6 +55,73 @@ class UnifiedEnrichmentPipeline:
             if rec.get("parcel_id_normalized")
         }
         geo_map = self._geo_metrics_for_tax_sales(tax_sale_payloads) if self.geo_enricher else {}
+        
+        # Batch fetch property records for seeds that need them (tax_sale, foreclosure)
+        # Skip code_violations as they already have address data
+        all_parcels = {
+            self.standardizer.normalize_parcel_id(seed.parcel_id) 
+            for seed in seeds 
+            if seed.parcel_id and seed.seed_type in ("tax_sale", "foreclosure")
+        }
+        # Remove None/Empty
+        all_parcels = {p for p in all_parcels if p}
+        
+        logger.info(
+            "property_lookup_scope",
+            total_seeds=len(seeds),
+            parcels_to_lookup=len(all_parcels)
+        )
+        
+        property_records_map = {}
+        if all_parcels:
+            try:
+                records = self.property_scraper.fetch_properties(parcel_numbers=list(all_parcels))
+                for rec in records:
+                    norm_pid = self.standardizer.normalize_parcel_id(rec.parcel_number)
+                    if norm_pid:
+                        property_records_map[norm_pid] = rec
+                        
+                # For seeds not found by parcel ID, try coordinate-based lookup
+                found_parcels = set(property_records_map.keys())
+                missing_parcels = all_parcels - found_parcels
+                
+                if missing_parcels:
+                    logger.info("attempting_coordinate_lookup", missing_count=len(missing_parcels))
+                    # Build map of parcel -> coordinates
+                    parcel_coords = {}
+                    for seed in seeds:
+                        norm_pid = self.standardizer.normalize_parcel_id(seed.parcel_id)
+                        if norm_pid in missing_parcels:
+                            # Get coordinates from source_payload
+                            payload = seed.source_payload or {}
+                            # Tax sales have geometry in GeoJSON format, foreclosures have lat/lon
+                            if seed.seed_type == "tax_sale" and "geometry" in payload:
+                                coords = payload["geometry"].get("coordinates")
+                                if coords and len(coords) == 2:
+                                    parcel_coords[norm_pid] = {"lon": coords[0], "lat": coords[1]}
+                            elif "latitude" in payload and "longitude" in payload:
+                                parcel_coords[norm_pid] = {
+                                    "lat": payload["latitude"],
+                                    "lon": payload["longitude"]
+                                }
+                    
+                    # Fetch by coordinates
+                    for parcel_id, coords in parcel_coords.items():
+                        try:
+                            rec = self.property_scraper.fetch_by_coordinates(
+                                latitude=coords["lat"],
+                                longitude=coords["lon"],
+                                radius_meters=50
+                            )
+                            if rec:
+                                property_records_map[parcel_id] = rec
+                                logger.info("property_found_by_coordinates", parcel=parcel_id)
+                        except Exception as coord_err:
+                            logger.warning("coordinate_lookup_failed", parcel=parcel_id, error=str(coord_err))
+                            
+            except Exception as e:
+                logger.error("property_fetch_failed", error=str(e))
+
         enriched_records: List[Dict[str, Any]] = []
 
         # Map parcel -> violation summary for quick lookup
@@ -76,6 +145,21 @@ class UnifiedEnrichmentPipeline:
                         merged.update(match)
                     if geo_metrics:
                         merged.update(self._format_geo_metrics(geo_metrics))
+                    
+                    # Add property record data if available
+                    prop_record = property_records_map.get(normalized_parcel)
+                    if prop_record:
+                        if not merged.get("situs_address"):
+                            merged["situs_address"] = prop_record.situs_address
+                        if not merged.get("city") and prop_record.situs_city:
+                            merged["city"] = prop_record.situs_city
+                        if not merged.get("zip_code") and prop_record.situs_zip:
+                            merged["zip_code"] = prop_record.situs_zip
+                        merged["property_record"] = prop_record.to_dict()
+                        if not merged.get("latitude") and prop_record.latitude:
+                            merged["latitude"] = prop_record.latitude
+                            merged["longitude"] = prop_record.longitude
+                    
                     enriched_records.append(merged)
                     continue
 
@@ -123,6 +207,75 @@ class UnifiedEnrichmentPipeline:
                     "raw_source": source_payload,
                 }
             )
+            
+            # For code violations, extract address from source payload
+            if seed.seed_type == "code_violation" and source_payload:
+                derived_addr = source_payload.get("derived_address")
+                if derived_addr and not base_record.get("situs_address"):
+                    # Parse "1218 W SMITH ST  ORLANDO FL" format
+                    parts = derived_addr.strip().split()
+                    if len(parts) >= 2:
+                        # Extract city (usually second-to-last or last before state)
+                        if len(parts) >= 3:
+                            # Assume format: ADDRESS CITY STATE
+                            # Find where city starts (after street address)
+                            # Simple heuristic: last 2-3 words are city/state
+                            if parts[-1] in ['FL', 'FLORIDA']:
+                                # City is everything between address and FL
+                                city_parts = []
+                                street_ended = False
+                                for i, part in enumerate(parts[:-1]):  # Exclude FL
+                                    # Heuristic: if we see ST, AVE, DR, etc., street has ended
+                                    if part in ['ST', 'AVE', 'DR', 'RD', 'LN', 'CT', 'CIR', 'BLVD', 'PL']:
+                                        street_ended = True
+                                        continue
+                                    if street_ended:
+                                        city_parts.append(part)
+                                
+                                if city_parts:
+                                    base_record["city"] = " ".join(city_parts)
+                        
+                        # Store full address
+                        base_record["situs_address"] = derived_addr
+                
+                # Extract property value data if available
+                # Code violations include parassdvalue (assessed value)
+                if not base_record.get("property_record"):
+                    cv_property_data = {}
+                    
+                    if source_payload.get("parassdvalue"):
+                        try:
+                            assd_val = float(source_payload["parassdvalue"])
+                            cv_property_data["total_assd"] = assd_val
+                            # Estimate market value as 110% of assessed (rough heuristic)
+                            cv_property_data["total_mkt"] = assd_val * 1.1
+                        except (ValueError, TypeError):
+                            pass
+                    
+                    if cv_property_data:
+                        base_record["property_record"] = cv_property_data
+            
+            # Merge Property Record Data (Address, Market Value, etc.)
+            prop_record = property_records_map.get(normalized_parcel)
+            if prop_record:
+                # Top-level address fields if missing
+                if not base_record.get("situs_address"):
+                    base_record["situs_address"] = prop_record.situs_address
+                
+                if not base_record.get("city") and prop_record.situs_city:
+                    base_record["city"] = prop_record.situs_city
+                    
+                if not base_record.get("zip_code") and prop_record.situs_zip:
+                    base_record["zip_code"] = prop_record.situs_zip
+
+                # Add full property record for scorer
+                base_record["property_record"] = prop_record.to_dict()
+                
+                # If we have coordinates from property record and not from seed, use them
+                if not base_record.get("latitude") and prop_record.latitude:
+                    base_record["latitude"] = prop_record.latitude
+                    base_record["longitude"] = prop_record.longitude
+
             enriched_records.append(base_record)
 
         logger.info("enriched_records_built", count=len(enriched_records))
