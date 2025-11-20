@@ -157,8 +157,8 @@ class TestTaxSaleModel:
 
         # Access relationship
         assert tax_sale.property.parcel_id_normalized == "12-34-56-7890-01-001"
-        assert len(property_obj.tax_sales) == 1
-        assert property_obj.tax_sales[0].tda_number == "2024-001"
+        assert property_obj.tax_sale is not None
+        assert property_obj.tax_sale.tda_number == "2024-001"
 
 
 class TestLeadScoreModel:

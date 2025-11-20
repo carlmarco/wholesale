@@ -218,7 +218,7 @@ class TestLeadScoreLoader:
         """Test converting LeadScore dataclass to database model data."""
         loader = LeadScoreLoader()
 
-        lead_score_data = loader.load(test_db, sample_lead_score)
+        lead_score_data = loader.load(test_db, "12-34-56-7890-01-001", sample_lead_score)
 
         assert lead_score_data["parcel_id_normalized"] == "12-34-56-7890-01-001"
         assert lead_score_data["distress_score"] == 25.0
@@ -233,7 +233,7 @@ class TestLeadScoreLoader:
         """Test that loading lead score creates parent property first."""
         loader = LeadScoreLoader()
 
-        loader.load(test_db, sample_lead_score)
+        loader.load(test_db, "12-34-56-7890-01-001", sample_lead_score)
 
         # Verify parent property was created
         from src.wholesaler.db.repository import PropertyRepository
@@ -263,7 +263,10 @@ class TestLeadScoreLoader:
                 tier="A",
                 reasons=["Test reason"],
             )
-            lead_scores.append(lead_score)
+            lead_scores.append((
+                {"parcel_id_normalized": f"12-34-56-7890-01-00{i}"},
+                lead_score
+            ))
 
         # Bulk load
         stats = loader.bulk_load(test_db, lead_scores, create_history=False, track_run=False)
@@ -292,7 +295,12 @@ class TestLeadScoreLoader:
         )
 
         # Bulk load with history
-        stats = loader.bulk_load(test_db, [lead_score], create_history=True, track_run=False)
+        stats = loader.bulk_load(
+            test_db,
+            [({"parcel_id_normalized": "12-34-56-7890-01-001"}, lead_score)],
+            create_history=True,
+            track_run=False
+        )
 
         assert stats["processed"] == 1
 
