@@ -298,19 +298,27 @@ def calculate_roi(
     }
 
 
-def get_deal_analysis(features: PropertyFeatures) -> DealAnalysis:
+def get_deal_analysis(features: PropertyFeatures, actual_arv: Optional[float] = None) -> DealAnalysis:
     """
     Perform comprehensive deal analysis.
 
     Args:
         features: Property features
+        actual_arv: Actual market value from property appraiser (if available)
 
     Returns:
         Complete deal analysis with recommendations
     """
-    # Get ARV estimate
-    arv_result = estimate_arv(features)
-    estimated_arv = arv_result["estimated_arv"]
+    # Get ARV estimate (use actual if provided, otherwise estimate)
+    if actual_arv:
+        estimated_arv = actual_arv
+        arv_confidence = 0.95  # High confidence for actual appraiser data
+        logger.info("using_actual_arv", parcel_id=features.parcel_id, arv=actual_arv)
+    else:
+        arv_result = estimate_arv(features)
+        estimated_arv = arv_result["estimated_arv"]
+        arv_confidence = arv_result["confidence"]
+        logger.info("using_estimated_arv", parcel_id=features.parcel_id, arv=estimated_arv)
 
     # Get repair cost estimate
     repair_result = estimate_repair_costs(features)
@@ -342,7 +350,7 @@ def get_deal_analysis(features: PropertyFeatures) -> DealAnalysis:
     roi_percentage = roi_result["roi_percentage"]
 
     # Determine confidence level
-    avg_confidence = (arv_result["confidence"] + repair_result["confidence"]) / 2
+    avg_confidence = (arv_confidence + repair_result["confidence"]) / 2
     if avg_confidence >= 0.80:
         confidence_level = "high"
     elif avg_confidence >= 0.70:

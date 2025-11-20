@@ -86,10 +86,25 @@ if parcel_id:
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
+            arv_label = "Estimated ARV"
+            arv_help = "After Repair Value"
+            
+            # Show data source
+            if analysis.get("arv_data_source") == "property_appraiser":
+                arv_label = "Market Value (ARV)"
+                arv_help = "From Orange County Property Appraiser"
+            
             st.metric(
-                label="Estimated ARV",
+                label=arv_label,
                 value=format_currency(analysis["estimated_arv"]),
+                help=arv_help,
             )
+            
+            # Data source indicator
+            if analysis.get("arv_data_source") == "property_appraiser":
+                st.caption("✅ Property Appraiser Data")
+            else:
+                st.caption("⚠️ Estimated (No Appraiser Data)")
 
         with col2:
             st.metric(

@@ -43,7 +43,7 @@ def sample_tax_sale_property():
         city="ORLANDO",
         state="FL",
         zip_code="32801",
-        sale_date=date(2024, 3, 15),
+        sale_date="2024-03-15",
         deed_status="Not Issued",
         latitude=28.5383,
         longitude=-81.3792,
@@ -62,7 +62,7 @@ def sample_enriched_property():
         zip_code="32801",
         latitude=28.5383,
         longitude=-81.3792,
-        nearby_violations=[],
+        nearby_violations=0,
     )
 
 
@@ -70,14 +70,13 @@ def sample_enriched_property():
 def sample_lead_score(sample_enriched_property):
     """Create a sample LeadScore dataclass for testing."""
     return LeadScoreDataclass(
-        property=sample_enriched_property,
         distress_score=25.0,
         value_score=20.0,
         location_score=15.0,
         urgency_score=10.0,
         total_score=70.0,
         tier="A",
-        scoring_reasons=["High distress score", "Good value opportunity"],
+        reasons=["High distress score", "Good value opportunity"],
     )
 
 
@@ -173,7 +172,7 @@ class TestTaxSaleLoader:
                 tda_number=f"2024-00{i}",
                 situs_address=f"{i*100} Main St",
                 city="Orlando",
-                sale_date=date(2024, 3, 15),
+                sale_date="2024-03-15",
             )
             for i in range(1, 4)
         ]
@@ -193,7 +192,7 @@ class TestTaxSaleLoader:
                 parcel_id="12 34 56 7890 01 001",
                 tda_number="2024-001",
                 situs_address="123 Main St",
-                sale_date=date(2024, 3, 15),
+                sale_date="2024-03-15",
             )
         ]
 
@@ -228,7 +227,7 @@ class TestLeadScoreLoader:
         assert lead_score_data["urgency_score"] == 10.0
         assert lead_score_data["total_score"] == 70.0
         assert lead_score_data["tier"] == "A"
-        assert len(lead_score_data["scoring_reasons"]) == 2
+        assert len(lead_score_data["reasons"]) == 2
 
     def test_load_creates_parent_property(self, test_db, sample_lead_score):
         """Test that loading lead score creates parent property first."""
@@ -256,14 +255,13 @@ class TestLeadScoreLoader:
                 city="Orlando",
             )
             lead_score = LeadScoreDataclass(
-                property=enriched_prop,
                 distress_score=25.0,
                 value_score=20.0,
                 location_score=15.0,
                 urgency_score=10.0,
                 total_score=70.0,
                 tier="A",
-                scoring_reasons=["Test reason"],
+                reasons=["Test reason"],
             )
             lead_scores.append(lead_score)
 
@@ -284,14 +282,13 @@ class TestLeadScoreLoader:
             city="Orlando",
         )
         lead_score = LeadScoreDataclass(
-            property=enriched_prop,
             distress_score=25.0,
             value_score=20.0,
             location_score=15.0,
             urgency_score=10.0,
             total_score=70.0,
             tier="A",
-            scoring_reasons=["Test"],
+            reasons=["Test"],
         )
 
         # Bulk load with history

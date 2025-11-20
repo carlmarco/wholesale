@@ -43,6 +43,7 @@ class TestPropertyRepository:
         property_obj = repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
             city="Orlando",
             state="FL",
@@ -61,6 +62,7 @@ class TestPropertyRepository:
         repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         test_db.commit()
@@ -95,6 +97,7 @@ class TestPropertyRepository:
         repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
             city="Orlando",
         )
@@ -121,6 +124,7 @@ class TestPropertyRepository:
         repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
             is_active=True,
         )
@@ -129,6 +133,7 @@ class TestPropertyRepository:
         repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-002",
+            parcel_id_original="12 34 56 7890 01 002",
             situs_address="456 Oak Ave",
             is_active=False,
         )
@@ -148,6 +153,7 @@ class TestPropertyRepository:
         repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
             latitude=28.5383,
             longitude=-81.3792,
@@ -157,6 +163,7 @@ class TestPropertyRepository:
         repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-002",
+            parcel_id_original="12 34 56 7890 01 002",
             situs_address="456 Oak Ave",
         )
 
@@ -174,6 +181,7 @@ class TestPropertyRepository:
         repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         test_db.commit()
@@ -198,6 +206,7 @@ class TestTaxSaleRepository:
         property_repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         test_db.commit()
@@ -222,6 +231,7 @@ class TestTaxSaleRepository:
         property_repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         test_db.commit()
@@ -257,11 +267,13 @@ class TestLeadScoreRepository:
         property_repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         property_repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-002",
+            parcel_id_original="12 34 56 7890 01 002",
             situs_address="456 Oak Ave",
         )
         test_db.commit()
@@ -296,6 +308,7 @@ class TestLeadScoreRepository:
         property_repo.create(
             test_db,
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         test_db.commit()
@@ -324,6 +337,7 @@ class TestLeadScoreRepository:
             property_repo.create(
                 test_db,
                 parcel_id_normalized=f"12-34-56-7890-01-00{i}",
+                parcel_id_original=f"12 34 56 7890 01 00{i}",
                 situs_address=f"{i*100} Main St",
             )
         test_db.commit()
@@ -353,6 +367,7 @@ class TestLeadScoreRepository:
             property_repo.create(
                 test_db,
                 parcel_id_normalized=f"12-34-56-7890-01-00{i}",
+                parcel_id_original=f"12 34 56 7890 01 00{i}",
                 situs_address=f"{i*100} Main St",
             )
         test_db.commit()

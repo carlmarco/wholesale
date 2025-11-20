@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from src.wholesaler.api.dependencies import get_db
 from src.wholesaler.api.cache import cache_result
-from src.wholesaler.db.models import LeadScore, Property, TaxSale, Foreclosure
+from src.wholesaler.db.models import LeadScore, Property, TaxSale, Foreclosure, EnrichedSeed
 from src.wholesaler.ml.models import (
     PropertyFeatures,
     get_deal_analysis,
@@ -18,6 +18,7 @@ from src.wholesaler.ml.models import (
 )
 from pydantic import BaseModel
 from typing import List, Optional
+import json
 
 router = APIRouter(prefix="/api/v1/analysis", tags=["analysis"])
 
@@ -34,6 +35,7 @@ class DealAnalysisResponse(BaseModel):
     risk_factors: List[str]
     opportunity_factors: List[str]
     recommendation: str
+    arv_data_source: str = "estimated"
 
 
 class ARVResponse(BaseModel):
@@ -98,6 +100,29 @@ async def get_property_analysis(
         .filter(Foreclosure.parcel_id_normalized == parcel_id)
         .first()
     )
+    
+    # Try to get actual property appraiser data from enriched_seeds
+    actual_market_value = None
+    try:
+        enriched_seed = (
+            db.query(EnrichedSeed)
+            .filter(EnrichedSeed.parcel_id_normalized == parcel_id)
+            .first()
+        )
+        
+        if enriched_seed and enriched_seed.enriched_data:
+            enriched = enriched_seed.enriched_data
+            if isinstance(enriched, str):
+                try:
+                    enriched = json.loads(enriched)
+                except json.JSONDecodeError:
+                    enriched = {}
+            
+            prop_record = enriched.get("property_record", {})
+            if prop_record and prop_record.get("total_mkt"):
+                actual_market_value = float(prop_record["total_mkt"])
+    except Exception:
+        pass
 
     # Build property features
     features = PropertyFeatures(
@@ -115,8 +140,8 @@ async def get_property_analysis(
         foreclosure_judgment=float(foreclosure.default_amount) if foreclosure and foreclosure.default_amount else None,
     )
 
-    # Get ML analysis
-    analysis = get_deal_analysis(features)
+    # Get ML analysis (will use actual_market_value if provided)
+    analysis = get_deal_analysis(features, actual_arv=actual_market_value)
 
     return DealAnalysisResponse(
         parcel_id=analysis.parcel_id,
@@ -129,6 +154,7 @@ async def get_property_analysis(
         risk_factors=analysis.risk_factors,
         opportunity_factors=analysis.opportunity_factors,
         recommendation=analysis.recommendation,
+        arv_data_source="property_appraiser" if actual_market_value else "estimated",
     )
 
 

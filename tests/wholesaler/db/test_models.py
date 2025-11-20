@@ -68,10 +68,12 @@ class TestPropertyModel:
         """Test that parcel_id_normalized must be unique."""
         property1 = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         property2 = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="456 Oak Ave",
         )
 
@@ -86,6 +88,7 @@ class TestPropertyModel:
         """Test soft delete functionality."""
         property_obj = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
             is_active=True,
         )
@@ -115,6 +118,7 @@ class TestTaxSaleModel:
         # Create parent property first
         property_obj = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         test_db.add(property_obj)
@@ -138,6 +142,7 @@ class TestTaxSaleModel:
         """Test relationship between TaxSale and Property."""
         property_obj = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         tax_sale = TaxSale(
@@ -163,6 +168,7 @@ class TestLeadScoreModel:
         """Test creating a lead score."""
         property_obj = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         test_db.add(property_obj)
@@ -176,7 +182,7 @@ class TestLeadScoreModel:
             urgency_score=10.0,
             total_score=70.0,
             tier="A",
-            scoring_reasons=["High distress", "Good value"],
+            reasons=["High distress", "Good value"],
             scored_at=datetime.now(),
         )
 
@@ -185,12 +191,13 @@ class TestLeadScoreModel:
 
         assert lead_score.total_score == 70.0
         assert lead_score.tier == "A"
-        assert len(lead_score.scoring_reasons) == 2
+        assert len(lead_score.reasons) == 2
 
     def test_lead_score_tier_constraint(self, test_db):
         """Test that tier must be A, B, C, or D."""
         property_obj = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         test_db.add(property_obj)
@@ -216,6 +223,7 @@ class TestLeadScoreHistoryModel:
         """Test creating lead score history snapshot."""
         property_obj = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
         lead_score = LeadScore(
@@ -301,6 +309,7 @@ class TestTimestampMixin:
         """Test that created_at and updated_at are set automatically."""
         property_obj = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
 
@@ -318,6 +327,7 @@ class TestTimestampMixin:
         """Test that updated_at changes when record is updated."""
         property_obj = Property(
             parcel_id_normalized="12-34-56-7890-01-001",
+            parcel_id_original="12 34 56 7890 01 001",
             situs_address="123 Main St",
         )
 

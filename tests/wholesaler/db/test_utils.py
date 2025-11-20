@@ -207,6 +207,7 @@ class TestDatabaseStatistics:
         for i in range(5):
             property_obj = Property(
                 parcel_id_normalized=f"12-34-56-7890-01-00{i}",
+                parcel_id_original=f"12 34 56 7890 01 00{i}",
                 situs_address=f"{i*100} Main St",
             )
             test_db.add(property_obj)
@@ -223,6 +224,7 @@ class TestDatabaseStatistics:
         for i in range(3):
             property_obj = Property(
                 parcel_id_normalized=f"12-34-56-7890-01-00{i}",
+                parcel_id_original=f"12 34 56 7890 01 00{i}",
                 situs_address=f"{i*100} Main St",
             )
             test_db.add(property_obj)

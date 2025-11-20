@@ -253,7 +253,7 @@ def get_lead_detail(
             total_score=float(lead.total_score or 0.0),
             tier=lead.tier,
             scoring_reasons=lead.reasons or [],
-            property=_serialize_property_detail(lead.property),
+            property=_serialize_property_detail(lead.property, db),
             tax_sale=_serialize_tax_sale(lead.property.tax_sale),
             foreclosure=_serialize_foreclosure(lead.property.foreclosure),
             scored_at=lead.scored_at,
@@ -314,8 +314,9 @@ def get_lead_history(
     return history
 
 
-def _serialize_property_detail(property_obj: Property) -> dict:
-    return {
+def _serialize_property_detail(property_obj: Property, db: Session = None) -> dict:
+    """Serialize property with enriched property_record data if available."""
+    result = {
         "parcel_id_normalized": property_obj.parcel_id_normalized,
         "parcel_id_original": property_obj.parcel_id_original,
         "situs_address": property_obj.situs_address,
@@ -329,6 +330,38 @@ def _serialize_property_detail(property_obj: Property) -> dict:
         "created_at": property_obj.created_at,
         "updated_at": property_obj.updated_at,
     }
+    
+    # Try to get property appraiser data from enriched_seeds
+    if db:
+        try:
+            enriched_seed = (
+                db.query(EnrichedSeed)
+                .filter(EnrichedSeed.parcel_id_normalized == property_obj.parcel_id_normalized)
+                .first()
+            )
+            
+            if enriched_seed and enriched_seed.enriched_data:
+                enriched = enriched_seed.enriched_data
+                if isinstance(enriched, str):
+                    import json
+                    try:
+                        enriched = json.loads(enriched)
+                    except json.JSONDecodeError:
+                        enriched = {}
+                
+                # Extract property_record data
+                prop_record = enriched.get("property_record", {})
+                if prop_record:
+                    result["market_value"] = prop_record.get("total_mkt")
+                    result["assessed_value"] = prop_record.get("total_assd")
+                    result["year_built"] = prop_record.get("year_built")
+                    result["living_area"] = prop_record.get("living_area")
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to fetch enriched property data: {str(e)}")
+    
+    return result
 
 
 def _serialize_tax_sale(tax_sale: Optional[TaxSale]) -> Optional[dict]:

@@ -26,6 +26,12 @@ class PropertyDetail(PropertyBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    
+    # Property appraiser data (from enriched property_record)
+    market_value: Optional[float] = Field(None, description="Market value from property appraiser")
+    assessed_value: Optional[float] = Field(None, description="Assessed value for tax purposes")
+    year_built: Optional[int] = Field(None, description="Year property was built")
+    living_area: Optional[float] = Field(None, description="Living area in square feet")
 
     class Config:
         from_attributes = True

@@ -193,6 +193,63 @@ if parcel_id:
         st.subheader(" Scoring Reasons")
         render_scoring_reasons_table(lead)
 
+        # Property Valuation Section (NEW - shows appraiser data)
+        st.markdown("---")
+        st.subheader("🏠 Property Valuation")
+        
+        # Try to get property appraiser data from the property record
+        # This data comes from the enrichment pipeline
+        property_data = lead.get("property", {})
+        
+        # Check if we have enriched property data
+        # The API should expose this from property_record or enriched_seed data
+        has_appraiser_data = False
+        market_value = None
+        assessed_value = None
+        year_built = None
+        living_area = None
+        
+        # TODO: API needs to expose property_record data in lead detail response
+        # For now, check if these fields exist in property_data
+        if property_data.get("market_value"):
+            has_appraiser_data = True
+            market_value = property_data.get("market_value")
+            assessed_value = property_data.get("assessed_value")
+            year_built = property_data.get("year_built")
+            living_area = property_data.get("living_area")
+        
+        val_col1, val_col2, val_col3, val_col4 = st.columns(4)
+        
+        with val_col1:
+            if market_value:
+                st.metric("Market Value", f"${market_value:,.0f}", help="From Orange County Property Appraiser")
+            else:
+                st.metric("Market Value", "Not Available", help="Property appraiser data not found")
+        
+        with val_col2:
+            if assessed_value:
+                st.metric("Assessed Value", f"${assessed_value:,.0f}", help="Tax assessed value")
+            else:
+                st.metric("Assessed Value", "Not Available")
+        
+        with val_col3:
+            if year_built:
+                st.metric("Year Built", str(year_built))
+            else:
+                st.metric("Year Built", "N/A")
+        
+        with val_col4:
+            if living_area:
+                st.metric("Living Area", f"{living_area:,.0f} sqft")
+            else:
+                st.metric("Living Area", "N/A")
+        
+        # Data source indicator
+        if has_appraiser_data:
+            st.success("✅ Property appraiser data available - profitability calculations use actual values")
+        else:
+            st.warning("⚠️ Property appraiser data not available - profitability estimates may use heuristics")
+
         # Property details
         st.markdown("---")
         st.subheader(" Property Details")
