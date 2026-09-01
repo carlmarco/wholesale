@@ -19,17 +19,39 @@ from src.wholesaler.feasibility.outcomes import (
     label_cohort,
     load_sale_outcomes,
 )
+from src.wholesaler.feasibility.reconstruct import (
+    CoverageReport,
+    DistressEvent,
+    Valuation,
+    ViolationRecord,
+    reconstruct_cohort,
+)
 from src.wholesaler.feasibility.report import render
+from src.wholesaler.feasibility.sources import (
+    load_events,
+    load_valuations,
+    load_violations,
+    write_cohort,
+)
 
 __all__ = [
     "CohortMember",
+    "CoverageReport",
+    "DistressEvent",
     "FeasibilityReport",
     "LabelledMember",
     "PointInTimeError",
     "SaleOutcome",
     "assert_features_precede_outcomes",
+    "Valuation",
+    "ViolationRecord",
     "evaluate",
     "label_cohort",
+    "load_events",
     "load_sale_outcomes",
+    "load_valuations",
+    "load_violations",
+    "reconstruct_cohort",
     "render",
+    "write_cohort",
 ]

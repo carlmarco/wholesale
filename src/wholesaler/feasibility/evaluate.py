@@ -80,7 +80,9 @@ class FeasibilityReport:
         horizon_days: Observation window used.
         lift_at_k: Ranking quality at each action budget tested.
         auc: Rank correlation between score and outcome, as a secondary check.
-        verdict: One of "signal", "no signal", "insufficient data".
+        verdict: One of "signal", "weak signal", "no signal", "insufficient
+            data". "weak signal" means the ranking beats chance overall but not
+            at any action budget - real, and not yet usable.
         reasoning: Why that verdict, in a sentence.
     """
     cohort_size: int
@@ -326,6 +328,22 @@ def _judge(
             f"indistinguishable from random (AUC {auc.point:.3f}, interval "
             f"{auc.low:.3f}-{auc.high:.3f} spans 0.5). One budget out of "
             f"{len(results)} clearing the bar is what noise looks like, not a result.",
+        )
+
+    if ranks_better_than_chance and not convincing:
+        best = max(results, key=lambda result: result.lift.point) if results else None
+        detail = (
+            f" The best budget, k={best.k}, reaches lift {best.lift.point:.2f}x but its "
+            f"interval still spans 1.0 ({best.lift.low:.2f}-{best.lift.high:.2f})."
+            if best
+            else ""
+        )
+        return (
+            "weak signal",
+            f"the scorer ranks better than chance overall (AUC {auc.point:.3f}, "
+            f"interval {auc.low:.3f}-{auc.high:.3f} above 0.5), but the advantage is "
+            f"too small to show at any action budget.{detail} The effect is real and "
+            "currently too weak to work leads from.",
         )
 
     return (

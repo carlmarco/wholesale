@@ -144,6 +144,35 @@ class TestSignalCase:
         assert report.lift_at_k[0].precision.point == 1.0
 
 
+class TestWeakSignal:
+    def test_real_but_small_signal_is_not_called_no_signal(self):
+        """AUC above 0.5 while no budget clears it is its own answer.
+
+        Calling this "no signal" would say the ranking is worth nothing while
+        the AUC says otherwise. The useful message is that the effect is real
+        and too small to work leads from.
+        """
+        report = evaluate(ranked_cohort(900, 0.18, seed=0, strength=0.20), horizon_days=180)
+
+        assert report.auc.low > 0.5, "the cohort must carry real rank signal"
+        assert not any(r.beats_chance for r in report.lift_at_k), "and no usable budget"
+        assert report.verdict == "weak signal"
+        assert "too small to show at any action budget" in report.reasoning
+
+    @pytest.mark.parametrize("seed", [0, 1, 2, 5, 9, 11])
+    def test_weak_regime_is_stable_across_seeds(self, seed):
+        """Not a single lucky configuration."""
+        report = evaluate(ranked_cohort(900, 0.18, seed=seed, strength=0.20), horizon_days=180)
+        assert report.verdict == "weak signal"
+
+    def test_weak_signal_is_conclusive(self):
+        """It answers the question, so it is not an insufficient-data result."""
+        pairs = [(float(i), (i % 7 == 0) or (i > 700 and i % 3 == 0)) for i in range(900)]
+        report = evaluate(cohort(pairs), horizon_days=180)
+        assert report.verdict in {"signal", "weak signal"}
+        assert report.is_conclusive is True
+
+
 class TestReportedNumbers:
     def test_base_rate_and_counts(self):
         pairs = [(float(i), i % 4 == 0) for i in range(400)]

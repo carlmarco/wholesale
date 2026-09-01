@@ -9,6 +9,14 @@ VERDICT_GUIDANCE = {
         "keyed on parcel_id_normalized into actual_sale_price and label_date, "
         "then fit P(transacts) and E[sale price] on real outcomes."
     ),
+    "weak signal": (
+        "There is something to work with, but the current heuristic cannot act "
+        "on it. Two things are worth more than a model here: features with more "
+        "separating power, and a larger cohort so a top-k advantage becomes "
+        "measurable. Build the labelling pipeline (step 2) - the labels are what "
+        "let you improve features against a real target - but do not expect the "
+        "existing scorer to carry a campaign."
+    ),
     "no signal": (
         "Do not build the ML platform yet. A model trained on these features "
         "would inherit the same absence of signal. Test whether coverage and "
