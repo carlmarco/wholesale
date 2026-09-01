@@ -61,12 +61,18 @@ This package contains everything needed to understand and implement conservative
 
 ### 💻 Code (1 file)
 
-#### **UPDATED_PROFITABILITY_SCORER.py** ← **Production Ready**
-- **Purpose**: Complete replacement code for current profitability calculations
-- **Status**: Production-ready, fully documented, tested
+#### **UPDATED_PROFITABILITY_SCORER.py** ← **Proposal, not in use**
+- **Purpose**: Proposed replacement for the current profitability calculations
+- **Status**: NOT WIRED IN. The live scorer is
+  `src/wholesaler/scoring/profitability_scorer.py`, which still uses the
+  original constants ($15k minimum profit, 0.70 buyer margin, $25/sqft
+  repairs). This file has never been imported by any code path and is not
+  covered by tests. Adopting it lowers the number of leads reaching Tier A/B,
+  so treat it as a pending business decision rather than a drop-in change.
 - **Best For**: Implementation in Phase 3.6.1
 - **Key Features**:
-  - ConservativeProfitabilityBucket class (drop-in replacement)
+  - ConservativeProfitabilityBucket class (same name as the live class,
+    but a different interface - it is not a drop-in replacement)
   - All constants updated for Nov 2025
   - Carrying cost calculation included
   - Confidence interval calculation included
@@ -341,7 +347,7 @@ Impact: 90% reduction in false positives, 2x better lead quality
 ## 🎉 What You're Getting
 
 ✅ **4 comprehensive documents** - 2,500+ lines of analysis  
-✅ **Production-ready code** - Drop-in replacement implementation  
+📋 **Proposed code** - Written but never wired in; adopting it is a pending decision  
 ✅ **Market research** - Current housing trends analyzed  
 ✅ **Real scenarios** - 3 example properties, old vs new math  
 ✅ **Implementation roadmap** - 5-step process, time estimates  

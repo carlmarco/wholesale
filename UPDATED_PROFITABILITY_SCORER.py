@@ -1,4 +1,13 @@
 # UPDATED_PROFITABILITY_SCORER.py
+#
+# STATUS: PROPOSAL - NOT IN USE.
+#
+# Nothing imports this module. The scorer the application actually runs is
+# src/wholesaler/scoring/profitability_scorer.py, which still uses the original
+# constants. This file holds a proposed recalibration for 2025 market
+# conditions; adopting it raises the minimum profit bar and will surface fewer
+# Tier A/B leads, so it is a business decision rather than a mechanical swap.
+# See docs/profitability/RECALCULATION_INDEX.md.
 
 """
 Conservative Profitability Scorer for Nov 2025 Market Conditions

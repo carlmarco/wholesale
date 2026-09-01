@@ -92,7 +92,7 @@
 
 ### Key Files
 - **Roadmap**: [IMPLEMENTATION_ROADMAP.md - Phase 3.6 section](./IMPLEMENTATION_ROADMAP.md#phase-36-profit-validation)
-- **Code**: [UPDATED_PROFITABILITY_SCORER.py](../../UPDATED_PROFITABILITY_SCORER.py)
+- **Code**: [UPDATED_PROFITABILITY_SCORER.py](../../UPDATED_PROFITABILITY_SCORER.py) - proposal, not wired in; the live scorer is `src/wholesaler/scoring/profitability_scorer.py`
 - **Tests**: See PHASE_3_6_QUICK_START.md for test cases
 
 ---
@@ -143,7 +143,7 @@
 👉 Before/after: [RECALCULATION_IMPACT.md](../profitability/RECALCULATION_IMPACT.md) (20 min)
 
 ### Implementation
-👉 Code: [UPDATED_PROFITABILITY_SCORER.py](../../UPDATED_PROFITABILITY_SCORER.py) (copy-paste ready)
+👉 Proposed code: [UPDATED_PROFITABILITY_SCORER.py](../../UPDATED_PROFITABILITY_SCORER.py) - not in use; adopting it changes which leads reach Tier A/B
 👉 Checklist: See QUICK_REFERENCE for step-by-step
 
 ---
@@ -267,7 +267,7 @@ Constants in profitability calculations are tunable. Revisit quarterly if rates/
 
 ### Developer
 1. [PHASE_3_6_QUICK_START.md](./PHASE_3_6_QUICK_START.md) - Implementation steps
-2. [UPDATED_PROFITABILITY_SCORER.py](../../UPDATED_PROFITABILITY_SCORER.py) - Code
+2. [UPDATED_PROFITABILITY_SCORER.py](../../UPDATED_PROFITABILITY_SCORER.py) - Proposed code (not in use)
 3. [.github/copilot-instructions.md](../../.github/copilot-instructions.md) - Patterns
 
 ### Business Lead
@@ -294,7 +294,8 @@ Constants in profitability calculations are tunable. Revisit quarterly if rates/
 → [RECALCULATION_IMPACT.md](../profitability/RECALCULATION_IMPACT.md)
 
 ### I want just the code
-→ [UPDATED_PROFITABILITY_SCORER.py](../../UPDATED_PROFITABILITY_SCORER.py)
+→ Live: `src/wholesaler/scoring/profitability_scorer.py`
+→ Proposed: [UPDATED_PROFITABILITY_SCORER.py](../../UPDATED_PROFITABILITY_SCORER.py) (not in use)
 
 ### I want step-by-step execution
 → [PHASE_3_6_QUICK_START.md](./PHASE_3_6_QUICK_START.md)

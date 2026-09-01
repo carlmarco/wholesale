@@ -41,7 +41,7 @@ ARV * 0.7 - repair_costs - acquisition_cost > $15,000 profit
 - Airflow orchestration for daily ETL pipelines
 - FastAPI REST API with authentication
 - Streamlit dashboard with interactive lead analysis
-- Comprehensive unit tests (115+ passing)
+- Comprehensive test suite (286 tests)
 - Structured logging with structlog
 - Configuration management with Pydantic
 
@@ -130,7 +130,7 @@ wholesaler/
 │   ├── ml_feature_materialization.py
 │   ├── ml_model_training.py
 │   └── tier_a_alert_notifications.py
-├── tests/                       # 115+ unit tests
+├── tests/                       # 286 tests
 │   ├── wholesaler/              # Tests for main package
 │   │   ├── scoring/             # Scoring tests
 │   │   ├── etl/                 # ETL tests
@@ -495,9 +495,14 @@ pytest tests/ -v -m "not integration"
 ```
 
 **Test Results:**
-- 115 unit tests
+- 286 tests: 282 unit/integration-free, 4 live-API integration tests
 - 0 failures
-- 58% code coverage (focus on business logic)
+- 45% code coverage
+
+Database-backed tests require a PostGIS-enabled Postgres instance. Point
+`TEST_DATABASE_URL` at one (`docker compose up -d postgres` provides it); the
+suite fails rather than skipping when it is unreachable, since the ORM relies on
+Postgres-specific types that SQLite silently changes.
 
 ## Lead Scoring Algorithm
 
@@ -650,7 +655,7 @@ Property: 123 Main St (Tax Sale, 5 violations, built 1975)
 - ✅ Address standardization and normalization
 - ✅ Data deduplication by parcel ID
 - ✅ Initial lead scoring algorithm
-- ✅ Comprehensive unit tests (115+ tests)
+- ✅ Comprehensive test suite (286 tests)
 
 ### Phase 2: ETL Pipeline & Persistence ✅ COMPLETE
 - ✅ Database schema design (PostgreSQL)
@@ -711,7 +716,7 @@ Property: 123 Main St (Tax Sale, 5 violations, built 1975)
 **Hybrid ML scoring** blending heuristic buckets with ML predictions
 **Production logging** with structured JSON output via structlog
 **Type-safe models** with Pydantic validation
-**Comprehensive testing** with 115+ unit tests
+**Comprehensive testing** with 286 tests
 **Automated workflows** with 7 Airflow DAGs for daily ETL and weekly model training
 **Real-time API** with FastAPI serving lead predictions and analytics
 **Interactive dashboard** with Streamlit for lead browsing and analysis

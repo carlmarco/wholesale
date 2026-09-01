@@ -287,7 +287,8 @@ Time wasted: 0 hours ✅
 | Question | Document |
 |----------|----------|
 | Why did you change these? | CONSERVATIVE_ANALYSIS.md |
-| Show me the actual code | UPDATED_PROFITABILITY_SCORER.py |
+| Show me the running code | src/wholesaler/scoring/profitability_scorer.py |
+| Show me the proposed code | UPDATED_PROFITABILITY_SCORER.py (not in use) |
 | Before/after examples? | RECALCULATION_IMPACT.md |
 | Complete summary? | RECALCULATION_SUMMARY.md |
 | Navigation? | RECALCULATION_INDEX.md |

@@ -26,10 +26,11 @@ I've created **3 comprehensive documents** with detailed analysis and actionable
 - **Use Case**: Understanding why change is needed
 
 ### 2. **UPDATED_PROFITABILITY_SCORER.py** (Implementation Code)
-- **What**: Complete ConservativeProfitabilityBucket class (production-ready)
+- **What**: Proposed ConservativeProfitabilityBucket class (NOT in use - the
+  live scorer is `src/wholesaler/scoring/profitability_scorer.py`)
 - **Why**: Drop-in replacement for current profitability calculations
 - **How**: All constants updated, carrying costs added, confidence intervals included
-- **Key Output**: Copy-paste ready code for Phase 3.6.1
+- **Key Output**: Proposed code for Phase 3.6.1, pending a decision to adopt
 - **Use Case**: Implementing changes in your codebase
 
 ### 3. **PROFITABILITY_RECALCULATION_IMPACT.md** (Comparison Guide)
@@ -297,7 +298,7 @@ Conservative system tells your team:
 | Document | Purpose | When to Read |
 |---|---|---|
 | CONSERVATIVE_PROFITABILITY_ANALYSIS.md | Deep market analysis | Understanding why changes needed |
-| UPDATED_PROFITABILITY_SCORER.py | Production-ready code | Implementing Phase 3.6.1 |
+| UPDATED_PROFITABILITY_SCORER.py | Proposed code (not in use) | Implementing Phase 3.6.1 |
 | PROFITABILITY_RECALCULATION_IMPACT.md | Before/after examples | Justifying changes to team |
 | This document (RECALCULATION_SUMMARY.md) | Executive overview | Quick reference |
 
