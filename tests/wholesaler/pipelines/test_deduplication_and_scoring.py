@@ -231,13 +231,27 @@ class TestLeadScorer:
         assert any('violation' in reason.lower() for reason in result.reasons)
 
     def test_tier_determination(self):
-        """Test lead tier assignment"""
+        """Test lead tier assignment at each threshold boundary.
+
+        Asserted against the threshold constants rather than fixed scores, so
+        retuning the thresholds stays a one-line change instead of silently
+        disagreeing with this test.
+        """
         scorer = LeadScorer()
 
-        assert scorer._determine_tier(80) == "A"
-        assert scorer._determine_tier(65) == "B"
-        assert scorer._determine_tier(45) == "C"
-        assert scorer._determine_tier(30) == "D"
+        assert LeadScorer.TIER_A_THRESHOLD > LeadScorer.TIER_B_THRESHOLD
+        assert LeadScorer.TIER_B_THRESHOLD > LeadScorer.TIER_C_THRESHOLD
+
+        # Each threshold is inclusive, and one point below it drops a tier.
+        assert scorer._determine_tier(LeadScorer.TIER_A_THRESHOLD) == "A"
+        assert scorer._determine_tier(LeadScorer.TIER_A_THRESHOLD - 1) == "B"
+        assert scorer._determine_tier(LeadScorer.TIER_B_THRESHOLD) == "B"
+        assert scorer._determine_tier(LeadScorer.TIER_B_THRESHOLD - 1) == "C"
+        assert scorer._determine_tier(LeadScorer.TIER_C_THRESHOLD) == "C"
+        assert scorer._determine_tier(LeadScorer.TIER_C_THRESHOLD - 1) == "D"
+
+        assert scorer._determine_tier(100) == "A"
+        assert scorer._determine_tier(0) == "D"
 
     def test_rank_leads(self):
         """Test lead ranking by score"""
