@@ -1,9 +1,14 @@
 """
 Lead ranking strategies that operate on enriched seed records.
 
-These scorers are independent of the legacy lead scoring pipeline and are
-designed to work directly with enriched seed dictionaries produced by the
-new dual-seed ingestion flow.
+HybridBucketScorer is an adapter over the asset-agnostic engine in
+``src.leadscore``, configured by the real estate profile in
+``src.wholesaler.scoring.profiles.real_estate``. The scoring model lives in
+that profile; this module only adapts it to the shape existing callers expect.
+
+LogisticOpportunityScorer is still a standalone heuristic model. It has not been
+moved onto the engine because it is a single logistic function rather than a
+weighted bucket sum - a different shape, not a different configuration.
 """
 from __future__ import annotations
 
@@ -11,9 +16,7 @@ from dataclasses import dataclass
 from typing import Dict, Any
 import math
 
-
-def _clamp(value: float, low: float = 0.0, high: float = 100.0) -> float:
-    return max(low, min(high, value))
+from src.wholesaler.scoring.profiles import real_estate
 
 
 def _sigmoid(x: float) -> float:
@@ -22,149 +25,56 @@ def _sigmoid(x: float) -> float:
 
 @dataclass
 class BucketScores:
+    """The real estate profile's buckets, as callers have always received them."""
+
     distress: float
     disposition: float
     equity: float
     profitability: float = 0.0
 
-    def total(self, weights: Dict[str, float]) -> float:
-        return (
-            self.distress * weights.get("distress", 0)
-            + self.disposition * weights.get("disposition", 0)
-            + self.equity * weights.get("equity", 0)
-            + self.profitability * weights.get("profitability", 0)
-        )
-
 
 class HybridBucketScorer:
     """
-    Weighted bucket scorer.
+    Weighted bucket scorer for distressed property leads.
 
-    - Distress bucket emphasises code violations and recency.
-    - Disposition bucket emphasises tax sale / foreclosure signals but does not gate scoring.
-    - Equity bucket measures ability to transact (positive equity, price band).
-    - Profitability bucket (NEW) measures projected profit margin.
+    Thin adapter over :class:`src.leadscore.ScoringEngine` configured with the
+    real estate profile. The model itself - buckets, weights, bonuses, the
+    profitability guardrail and the tier bands - lives in
+    ``src.wholesaler.scoring.profiles.real_estate``; scoring a different asset
+    class means writing another profile rather than changing this class.
 
-    Updated to allow code violations to independently create Tier B/C leads.
+    The return shape is unchanged from the original implementation:
+    ``total_score``, ``tier``, ``bucket_scores`` (a :class:`BucketScores`) and
+    ``profitability``.
     """
 
-    # Adjusted weights to include profitability (total 1.0)
-    # Distress: 0.55, Disposition: 0.15, Equity: 0.10, Profitability: 0.20
-    WEIGHTS = {"distress": 0.55, "disposition": 0.15, "equity": 0.10, "profitability": 0.20}
+    WEIGHTS = real_estate.WEIGHTS
 
-    def __init__(self):
-        from src.wholesaler.scoring.profitability_scorer import ConservativeProfitabilityBucket
-        self.profitability_scorer = ConservativeProfitabilityBucket()
+    def __init__(self, engine=None):
+        self.engine = engine or real_estate.build_engine()
 
     def score(self, record: Dict[str, Any]) -> Dict[str, Any]:
-        buckets = self._bucket_scores(record)
-        total = buckets.total(self.WEIGHTS)
-        if record.get("tax_sale"):
-            total += 15
-        if record.get("foreclosure"):
-            total += 10
-        total = _clamp(total)
-        
-        # Get detailed profitability result for metadata
-        prof_result = self.profitability_scorer.score(record)
-        
-        tier = self._tier(total, prof_result.is_profitable)
-        
+        """
+        Score one enriched seed record.
+
+        Args:
+            record: Enriched property record.
+
+        Returns:
+            Dict with total_score, tier, bucket_scores and profitability.
+        """
+        result = self.engine.score(record)
+        profitability = dict(result.gate.detail)
+        # An engine-level implementation detail; callers see the same four keys
+        # the original returned.
+        profitability.pop("min_profit_threshold", None)
+
         return {
-            "total_score": total,
-            "tier": tier,
-            "bucket_scores": buckets,
-            "profitability": {
-                "projected_profit": prof_result.projected_profit,
-                "is_profitable": prof_result.is_profitable,
-                "roi_percent": prof_result.roi_percent,
-                "details": prof_result.details
-            }
+            "total_score": result.total_score,
+            "tier": result.tier,
+            "bucket_scores": BucketScores(**result.bucket_scores),
+            "profitability": profitability,
         }
-
-    def _bucket_scores(self, record: Dict[str, Any]) -> BucketScores:
-        violation_count = record.get("violation_count") or record.get("nearby_violations") or 0
-        open_violations = record.get("open_violations") or record.get("nearby_open_violations") or 0
-        most_recent = record.get("most_recent_violation")
-
-        # Increased multipliers to allow violations to create higher-tier leads
-        distress = violation_count * 10
-        distress += open_violations * 12
-        if most_recent:
-            distress += 25  # recency boost (increased from 20)
-        distress = _clamp(distress, 0, 100)
-
-        disposition = 0.0
-        seed_type = record.get("seed_type")
-        tax_sale = record.get("tax_sale") or {}
-        foreclosure = record.get("foreclosure") or {}
-
-        if tax_sale:
-            disposition += 60
-        if foreclosure:
-            disposition += 45
-            if foreclosure.get("default_amount"):
-                disposition += min(20, foreclosure["default_amount"] / 100000 * 5)
-        if seed_type == "code_violation":
-            disposition += 25  # increased to allow code violations to compete
-        disposition = _clamp(disposition, 0, 100)
-
-        property_record = record.get("property_record") or {}
-        equity_pct = property_record.get("equity_percent") or record.get("equity_percent")
-        total_mkt = property_record.get("total_mkt") or record.get("total_mkt")
-
-        equity = 0.0
-        if equity_pct:
-            if equity_pct >= 200:
-                equity += 50
-            elif equity_pct >= 150:
-                equity += 35
-            elif equity_pct >= 120:
-                equity += 20
-
-        if total_mkt:
-            if 80000 <= total_mkt <= 450000:
-                equity += 30
-            elif total_mkt < 80000:
-                equity += 10
-        equity = _clamp(equity, 0, 100)
-        
-        # Profitability Bucket
-        prof_result = self.profitability_scorer.score(record)
-        profitability = 0.0
-        if prof_result.is_profitable:
-            # Scale score based on profit amount (15k -> 50, 50k -> 100)
-            profit_surplus = max(0, prof_result.projected_profit - 15000)
-            profitability = 50 + (profit_surplus / 35000 * 50)
-        else:
-            # Penalize unprofitable deals
-            profitability = 0.0
-            
-        profitability = _clamp(profitability, 0, 100)
-
-        return BucketScores(
-            distress=distress, 
-            disposition=disposition, 
-            equity=equity,
-            profitability=profitability
-        )
-
-    @staticmethod
-    def _tier(score: float, is_profitable: bool = True) -> str:
-        # Guardrail: If not profitable, cannot be Tier A or B
-        if not is_profitable:
-            if score >= 40:
-                return "C"
-            return "D"
-            
-        # Adjusted thresholds to allow code violations to reach higher tiers
-        if score >= 60:
-            return "A"
-        if score >= 45:
-            return "B"
-        if score >= 32:
-            return "C"
-        return "D"
 
 
 class LogisticOpportunityScorer:
