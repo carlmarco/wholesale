@@ -5,11 +5,8 @@ Tests SQLAlchemy ORM models, relationships, constraints, and mixins.
 """
 import pytest
 from datetime import datetime, date
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 
-from src.wholesaler.db.base import Base
 from src.wholesaler.db.models import (
     Property,
     TaxSale,
@@ -20,26 +17,6 @@ from src.wholesaler.db.models import (
     LeadScoreHistory,
     DataIngestionRun,
 )
-
-
-@pytest.fixture(scope="function")
-def test_db():
-    """
-    Create an in-memory SQLite database for testing.
-
-    Note: PostGIS types (GEOGRAPHY) will be replaced with TEXT in SQLite.
-    For full PostGIS testing, use pytest-postgresql fixture.
-    """
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    yield session
-
-    session.close()
-    Base.metadata.drop_all(engine)
 
 
 class TestPropertyModel:
@@ -203,17 +180,21 @@ class TestLeadScoreModel:
         test_db.add(property_obj)
         test_db.commit()
 
-        # Note: SQLite doesn't enforce CHECK constraints by default
-        # In PostgreSQL, this would raise IntegrityError
         lead_score = LeadScore(
             parcel_id_normalized="12-34-56-7890-01-001",
             total_score=50.0,
+            distress_score=17.5,
+            value_score=15.0,
+            location_score=10.0,
+            urgency_score=7.5,
             tier="X",  # Invalid tier
+            scored_at=datetime.now(),
         )
 
         test_db.add(lead_score)
-        # This test validates the constraint exists in the model
-        # In PostgreSQL, this would fail with IntegrityError
+
+        with pytest.raises(IntegrityError):
+            test_db.commit()
 
 
 class TestLeadScoreHistoryModel:
@@ -229,7 +210,12 @@ class TestLeadScoreHistoryModel:
         lead_score = LeadScore(
             parcel_id_normalized="12-34-56-7890-01-001",
             total_score=70.0,
+            distress_score=25.0,
+            value_score=20.0,
+            location_score=15.0,
+            urgency_score=10.0,
             tier="A",
+            scored_at=datetime.now(),
         )
 
         test_db.add(property_obj)
@@ -237,14 +223,11 @@ class TestLeadScoreHistoryModel:
         test_db.commit()
 
         # Create history snapshot
+        # lead_score_history keeps only the total and tier, not the components.
         history = LeadScoreHistory(
             lead_score_id=lead_score.id,
             parcel_id_normalized="12-34-56-7890-01-001",
             snapshot_date=date(2024, 11, 6),
-            distress_score=25.0,
-            value_score=20.0,
-            location_score=15.0,
-            urgency_score=10.0,
             total_score=70.0,
             tier="A",
         )

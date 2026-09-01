@@ -15,6 +15,9 @@ structlog>=24.0.0
 # Excel processing
 openpyxl>=3.1.0
 
+# Parquet I/O (seed ingestion pipeline reads/writes .parquet)
+pyarrow>=15.0.0
+
 # Database (Phase 2)
 SQLAlchemy>=2.0.0
 psycopg2-binary>=2.9.0

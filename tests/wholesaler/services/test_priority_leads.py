@@ -3,26 +3,13 @@ import json
 from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.wholesaler.db.base import Base
 from src.wholesaler.db.models import EnrichedSeed
 from src.wholesaler.services.priority_leads import PriorityLeadService
-
-
-@pytest.fixture
-def session():
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    sess = Session()
-    yield sess
-    sess.close()
 
 
 def test_priority_lead_service_filters_high_priority(session):

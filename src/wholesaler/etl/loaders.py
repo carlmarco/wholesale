@@ -4,6 +4,7 @@ ETL Loaders
 Convert Pydantic models (Phase 1) to SQLAlchemy models (Phase 2) and load into database.
 """
 import json
+from contextlib import contextmanager
 from datetime import datetime, date
 from typing import List, Dict, Any, Optional
 
@@ -24,9 +25,36 @@ from src.wholesaler.db.repository import (
     DataIngestionRunRepository,
 )
 from src.wholesaler.transformers.address_standardizer import AddressStandardizer
+from src.wholesaler.utils.dates import coerce_date
 from src.wholesaler.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+@contextmanager
+def record_savepoint(session: Session):
+    """
+    Isolate one record's writes inside a SAVEPOINT.
+
+    Bulk loaders skip records that fail and keep going. Without a savepoint the
+    first failure leaves the surrounding Postgres transaction in an aborted
+    state, so every later record raises InFailedSqlTransaction and the whole
+    batch is lost while the run is still recorded as a partial success.
+
+    Args:
+        session: Database session
+
+    Raises:
+        Exception: Re-raises whatever the caller's block raised, after rolling
+            the savepoint back so the outer transaction stays usable.
+    """
+    nested = session.begin_nested()
+    try:
+        yield
+        nested.commit()
+    except Exception:
+        nested.rollback()
+        raise
 
 
 class PropertyLoader:
@@ -64,26 +92,12 @@ class PropertyLoader:
         if not parcel_id_normalized:
             raise ValueError(f"Cannot normalize parcel ID: {tax_sale_property.parcel_id}")
 
-        # Standardize address if available
-        situs_address = None
-        city = None
-        state = None
-        zip_code = None
-
-        if hasattr(tax_sale_property, 'address') and tax_sale_property.address:
-            standardized = self.standardizer.standardize(tax_sale_property.address)
-            situs_address = standardized.full_address
-            city = standardized.city
-            state = standardized.state
-            zip_code = standardized.zip_code
-
+        # The tax sale feed carries no address (the scraper requests only TDA
+        # number, sale date, deed status and parcel), so address fields are left
+        # unset here and filled in later from the property appraiser record.
         property_data = {
             'parcel_id_normalized': parcel_id_normalized,
             'parcel_id_original': tax_sale_property.parcel_id,
-            'situs_address': situs_address,
-            'city': city,
-            'state': state,
-            'zip_code': zip_code,
             'latitude': tax_sale_property.latitude,
             'longitude': tax_sale_property.longitude,
         }
@@ -218,7 +232,7 @@ class TaxSaleLoader:
         tax_sale_data = {
             'parcel_id_normalized': parcel_id_normalized,
             'tda_number': tax_sale_property.tda_number,
-            'sale_date': tax_sale_property.sale_date,
+            'sale_date': coerce_date(tax_sale_property.sale_date),
             'deed_status': tax_sale_property.deed_status,
             'latitude': tax_sale_property.latitude,
             'longitude': tax_sale_property.longitude,
@@ -260,8 +274,9 @@ class TaxSaleLoader:
 
         for tax_sale in tax_sale_properties:
             try:
-                tax_sale_data = self.load(session, tax_sale)
-                self.repository.upsert_by_parcel(session, tax_sale_data)
+                with record_savepoint(session):
+                    tax_sale_data = self.load(session, tax_sale)
+                    self.repository.upsert_by_parcel(session, tax_sale_data)
                 stats['processed'] += 1
                 stats['inserted'] += 1  # Simplified - can't easily distinguish
             except Exception as e:
@@ -333,7 +348,7 @@ class ForeclosureLoader:
             'situs_address': foreclosure_property.situs_address,
             'default_amount': foreclosure_property.default_amount,
             'opening_bid': foreclosure_property.opening_bid,
-            'auction_date': foreclosure_property.auction_date,
+            'auction_date': coerce_date(foreclosure_property.auction_date),
             'lender_name': foreclosure_property.lender_name,
             'property_type': foreclosure_property.property_type,
             'latitude': foreclosure_property.latitude,
@@ -376,8 +391,9 @@ class ForeclosureLoader:
 
         for foreclosure in foreclosure_properties:
             try:
-                foreclosure_data = self.load(session, foreclosure)
-                self.repository.upsert_by_parcel(session, foreclosure_data)
+                with record_savepoint(session):
+                    foreclosure_data = self.load(session, foreclosure)
+                    self.repository.upsert_by_parcel(session, foreclosure_data)
                 stats['processed'] += 1
                 stats['inserted'] += 1
             except Exception as e:
@@ -495,8 +511,9 @@ class PropertyRecordLoader:
 
         for property_record in property_records:
             try:
-                property_record_data = self.load(session, property_record)
-                self.repository.upsert_by_parcel(session, property_record_data)
+                with record_savepoint(session):
+                    property_record_data = self.load(session, property_record)
+                    self.repository.upsert_by_parcel(session, property_record_data)
                 stats['processed'] += 1
                 stats['inserted'] += 1
             except Exception as e:
@@ -526,6 +543,7 @@ class LeadScoreLoader:
 
     def __init__(self):
         self.repository = LeadScoreRepository()
+        self.property_loader = PropertyLoader()
         self.standardizer = AddressStandardizer()
         logger.info("lead_score_loader_initialized")
 
@@ -552,6 +570,15 @@ class LeadScoreLoader:
 
         if not parcel_id_normalized:
             raise ValueError(f"Cannot normalize parcel ID: {parcel_id}")
+
+        # lead_scores.parcel_id_normalized is a foreign key, so the parent row
+        # has to exist before the score can be written. Scoring can run against
+        # a parcel this database has not ingested yet, so create it here rather
+        # than failing the load.
+        self.property_loader.repository.upsert(session, {
+            'parcel_id_normalized': parcel_id_normalized,
+            'parcel_id_original': parcel_id,
+        })
 
         lead_score_data = {
             'parcel_id_normalized': parcel_id_normalized,
@@ -612,7 +639,8 @@ class LeadScoreLoader:
                 if not parcel_id:
                     raise ValueError("No parcel ID found in merged property")
 
-                self.load(session, parcel_id, lead_score, create_history=create_history)
+                with record_savepoint(session):
+                    self.load(session, parcel_id, lead_score, create_history=create_history)
                 stats['processed'] += 1
                 stats['inserted'] += 1
             except Exception as e:
@@ -724,17 +752,18 @@ class EnrichedSeedLoader:
                     enriched_data = json.loads(row.to_json())
 
                     # Upsert to database
-                    enriched_seed = self.repository.upsert(
-                        session,
-                        parcel_id_normalized=parcel_id_normalized,
-                        seed_type=seed_type,
-                        enriched_data=enriched_data
-                    )
+                    with record_savepoint(session):
+                        enriched_seed = self.repository.upsert(
+                            session,
+                            parcel_id_normalized=parcel_id_normalized,
+                            seed_type=seed_type,
+                            enriched_data=enriched_data
+                        )
+
+                        self._materialize_property_records(session, enriched_seed)
 
                     stats['processed'] += 1
                     stats['inserted'] += 1  # Simplified - can't easily distinguish
-
-                    self._materialize_property_records(session, enriched_seed)
 
                 except Exception as e:
                     logger.error(
@@ -847,7 +876,7 @@ class EnrichedSeedLoader:
         update_data = {
             'parcel_id_normalized': parcel_id,
             'tda_number': tax_data.get("tda_number"),
-            'sale_date': self._coerce_date(tax_data.get("sale_date")),
+            'sale_date': coerce_date(tax_data.get("sale_date")),
             'deed_status': tax_data.get("deed_status"),
             'latitude': tax_data.get("latitude"),
             'longitude': tax_data.get("longitude"),
@@ -864,7 +893,7 @@ class EnrichedSeedLoader:
             'situs_address': fore_data.get("situs_address"),
             'default_amount': fore_data.get("default_amount"),
             'opening_bid': fore_data.get("opening_bid"),
-            'auction_date': self._coerce_date(fore_data.get("auction_date")),
+            'auction_date': coerce_date(fore_data.get("auction_date")),
             'lender_name': fore_data.get("lender_name"),
             'property_type': fore_data.get("property_type"),
             'latitude': fore_data.get("latitude"),
@@ -941,19 +970,3 @@ class EnrichedSeedLoader:
             return value.isoformat()
         return str(value)
 
-    @staticmethod
-    def _coerce_date(value):
-        if value in (None, "", "null"):
-            return None
-        if isinstance(value, date) and not isinstance(value, datetime):
-            return value
-        if isinstance(value, datetime):
-            return value.date()
-        if isinstance(value, str):
-            formats = ("%Y-%m-%d", "%m/%d/%Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f")
-            for fmt in formats:
-                try:
-                    return datetime.strptime(value[:len(fmt)], fmt).date()
-                except ValueError:
-                    continue
-        return None

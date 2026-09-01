@@ -9,34 +9,16 @@ import pytest
 from datetime import datetime, date
 import tempfile
 import pandas as pd
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.wholesaler.db.base import Base
 from src.wholesaler.db.models import EnrichedSeed, Property, TaxSale
 from src.wholesaler.db.repository import EnrichedSeedRepository, PropertyRepository
 from src.wholesaler.etl.loaders import EnrichedSeedLoader
 from src.wholesaler.etl.seed_merger import SeedMerger
 from src.wholesaler.transformers.address_standardizer import AddressStandardizer
-
-
-@pytest.fixture(scope="function")
-def test_db():
-    """Create an in-memory SQLite database for testing."""
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-    Base.metadata.create_all(engine)
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    yield session
-
-    session.close()
-    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture

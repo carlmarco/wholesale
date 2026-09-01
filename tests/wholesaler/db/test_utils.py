@@ -5,27 +5,9 @@ Tests PostGIS utilities, data transformations, and database operations.
 """
 import pytest
 from datetime import datetime, date
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from src.wholesaler.db.base import Base
 from src.wholesaler.db import db_utils
 from src.wholesaler.db.models import Property, LeadScore
-
-
-@pytest.fixture(scope="function")
-def test_db():
-    """Create an in-memory SQLite database for testing."""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    yield session
-
-    session.close()
-    Base.metadata.drop_all(engine)
 
 
 class TestDistanceConversions:
@@ -233,7 +215,12 @@ class TestDatabaseStatistics:
             lead_score = LeadScore(
                 parcel_id_normalized=f"12-34-56-7890-01-00{i}",
                 total_score=75.0,
+                distress_score=26.25,
+                value_score=22.5,
+                location_score=15.0,
+                urgency_score=11.25,
                 tier="B",
+                scored_at=datetime.now(),
             )
             test_db.add(lead_score)
 

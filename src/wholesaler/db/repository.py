@@ -23,6 +23,7 @@ from src.wholesaler.db.models import (
     DataIngestionRun,
 )
 from src.wholesaler.db.session import get_db_session, with_retry
+from src.wholesaler.utils.dates import coerce_date
 from src.wholesaler.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -256,20 +257,29 @@ class PropertyRepository(BaseRepository):
         if not properties:
             return 0
 
+        # A multi-row INSERT takes its column list from the first mapping, so
+        # every row must carry the same keys or the extras are silently dropped.
+        columns = set(properties[0])
+        mismatched = [row for row in properties if set(row) != columns]
+        if mismatched:
+            raise ValueError(
+                "bulk_upsert requires every property to have the same keys; "
+                f"expected {sorted(columns)}, got {sorted(set(mismatched[0]))}"
+            )
+
         stmt = insert(Property).values(properties)
+        # Update only the columns actually supplied. Referencing a column that
+        # is absent from the payload raises, and writing one the caller omitted
+        # would null out data another source populated.
+        set_ = {
+            name: getattr(stmt.excluded, name)
+            for name in columns
+            if name != 'parcel_id_normalized'
+        }
+        set_['updated_at'] = func.now()
         stmt = stmt.on_conflict_do_update(
             index_elements=['parcel_id_normalized'],
-            set_={
-                'parcel_id_original': stmt.excluded.parcel_id_original,
-                'situs_address': stmt.excluded.situs_address,
-                'city': stmt.excluded.city,
-                'state': stmt.excluded.state,
-                'zip_code': stmt.excluded.zip_code,
-                'coordinates': stmt.excluded.coordinates,
-                'latitude': stmt.excluded.latitude,
-                'longitude': stmt.excluded.longitude,
-                'updated_at': func.now(),
-            }
+            set_=set_,
         )
 
         session.execute(stmt)
@@ -1077,24 +1087,7 @@ class EnrichedSeedRepository(BaseRepository):
             'unprocessed': unprocessed,
             'by_type': {seed_type: count for seed_type, count in by_type}
         }
-def _coerce_date(value: Any) -> Optional[date]:
-    if value is None or value == "":
-        return None
-    if isinstance(value, date) and not isinstance(value, datetime):
-        return value
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, str):
-        for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
-            try:
-                return datetime.strptime(value[:len(fmt)], fmt).date()
-            except ValueError:
-                continue
-        try:
-            return datetime.fromisoformat(value).date()
-        except ValueError:
-            return None
-    return None
+_coerce_date = coerce_date
 
 
 def _json_default(value: Any) -> str:

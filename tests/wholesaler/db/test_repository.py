@@ -5,10 +5,7 @@ Tests CRUD operations, upsert logic, bulk operations, and domain-specific querie
 """
 import pytest
 from datetime import datetime, date
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from src.wholesaler.db.base import Base
 from src.wholesaler.db.models import Property, TaxSale, LeadScore, DataIngestionRun
 from src.wholesaler.db.repository import (
     PropertyRepository,
@@ -18,19 +15,26 @@ from src.wholesaler.db.repository import (
 )
 
 
-@pytest.fixture(scope="function")
-def test_db():
-    """Create an in-memory SQLite database for testing."""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
+def create_lead_score(repo, session, parcel_id_normalized, total_score, tier):
+    """
+    Create a lead score with the component columns the schema requires.
 
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    yield session
-
-    session.close()
-    Base.metadata.drop_all(engine)
+    lead_scores stores four NOT NULL components weighted 35/30/20/15, so a score
+    cannot be written from total_score alone. Splitting by those weights keeps
+    the components consistent with the total. scored_at is NOT NULL with no
+    server default, so it is supplied here the way LeadScoreLoader does.
+    """
+    return repo.create(
+        session,
+        parcel_id_normalized=parcel_id_normalized,
+        total_score=total_score,
+        distress_score=total_score * 0.35,
+        value_score=total_score * 0.30,
+        location_score=total_score * 0.20,
+        urgency_score=total_score * 0.15,
+        tier=tier,
+        scored_at=datetime.now(),
+    )
 
 
 class TestPropertyRepository:
@@ -79,6 +83,7 @@ class TestPropertyRepository:
 
         property_data = {
             "parcel_id_normalized": "12-34-56-7890-01-001",
+            "parcel_id_original": "12 34 56 7890 01 001",
             "situs_address": "123 Main St",
             "city": "Orlando",
         }
@@ -106,6 +111,7 @@ class TestPropertyRepository:
         # Upsert with updated data
         property_data = {
             "parcel_id_normalized": "12-34-56-7890-01-001",
+            "parcel_id_original": "12 34 56 7890 01 001",
             "situs_address": "123 Main St",
             "city": "Winter Park",  # Updated city
             "zip_code": "32789",
@@ -172,7 +178,7 @@ class TestPropertyRepository:
         with_coords = repo.get_with_coordinates(test_db)
 
         assert len(with_coords) == 1
-        assert with_coords[0].latitude == 28.5383
+        assert float(with_coords[0].latitude) == pytest.approx(28.5383)
 
     def test_soft_delete(self, test_db):
         """Test soft delete operation."""
@@ -280,18 +286,8 @@ class TestLeadScoreRepository:
 
         # Create lead scores
         repo = LeadScoreRepository()
-        repo.create(
-            test_db,
-            parcel_id_normalized="12-34-56-7890-01-001",
-            total_score=85.0,
-            tier="A",
-        )
-        repo.create(
-            test_db,
-            parcel_id_normalized="12-34-56-7890-01-002",
-            total_score=65.0,
-            tier="B",
-        )
+        create_lead_score(repo, test_db, "12-34-56-7890-01-001", 85.0, "A")
+        create_lead_score(repo, test_db, "12-34-56-7890-01-002", 65.0, "B")
         test_db.commit()
 
         # Get Tier A leads
@@ -315,12 +311,7 @@ class TestLeadScoreRepository:
 
         # Create Tier A lead
         repo = LeadScoreRepository()
-        repo.create(
-            test_db,
-            parcel_id_normalized="12-34-56-7890-01-001",
-            total_score=90.0,
-            tier="A",
-        )
+        create_lead_score(repo, test_db, "12-34-56-7890-01-001", 90.0, "A")
         test_db.commit()
 
         # Get Tier A leads
@@ -344,11 +335,11 @@ class TestLeadScoreRepository:
 
         # Create lead scores with different tiers
         repo = LeadScoreRepository()
-        repo.create(test_db, parcel_id_normalized="12-34-56-7890-01-001", total_score=90.0, tier="A")
-        repo.create(test_db, parcel_id_normalized="12-34-56-7890-01-002", total_score=85.0, tier="A")
-        repo.create(test_db, parcel_id_normalized="12-34-56-7890-01-003", total_score=70.0, tier="B")
-        repo.create(test_db, parcel_id_normalized="12-34-56-7890-01-004", total_score=55.0, tier="C")
-        repo.create(test_db, parcel_id_normalized="12-34-56-7890-01-005", total_score=40.0, tier="D")
+        create_lead_score(repo, test_db, "12-34-56-7890-01-001", 90.0, "A")
+        create_lead_score(repo, test_db, "12-34-56-7890-01-002", 85.0, "A")
+        create_lead_score(repo, test_db, "12-34-56-7890-01-003", 70.0, "B")
+        create_lead_score(repo, test_db, "12-34-56-7890-01-004", 55.0, "C")
+        create_lead_score(repo, test_db, "12-34-56-7890-01-005", 40.0, "D")
         test_db.commit()
 
         # Get tier counts
@@ -376,11 +367,12 @@ class TestLeadScoreRepository:
         repo = LeadScoreRepository()
         scores = [90.0, 85.0, 75.0, 60.0, 45.0]
         for i, score in enumerate(scores, 1):
-            repo.create(
+            create_lead_score(
+                repo,
                 test_db,
-                parcel_id_normalized=f"12-34-56-7890-01-00{i}",
-                total_score=score,
-                tier="A" if score >= 80 else "B",
+                f"12-34-56-7890-01-00{i}",
+                score,
+                "A" if score >= 80 else "B",
             )
         test_db.commit()
 

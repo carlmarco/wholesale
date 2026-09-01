@@ -5,10 +5,7 @@ Tests Pydantic to SQLAlchemy model conversion and bulk loading operations.
 """
 import pytest
 from datetime import datetime, date
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from src.wholesaler.db.base import Base
 from src.wholesaler.models.property import TaxSaleProperty, EnrichedProperty
 from src.wholesaler.scoring import LeadScore as LeadScoreDataclass
 from src.wholesaler.etl.loaders import (
@@ -17,32 +14,22 @@ from src.wholesaler.etl.loaders import (
     LeadScoreLoader,
 )
 
-
-@pytest.fixture(scope="function")
-def test_db():
-    """Create an in-memory SQLite database for testing."""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    yield session
-
-    session.close()
-    Base.metadata.drop_all(engine)
+# Sources publish the same parcel with different punctuation, so loaders reduce
+# it to digits only (see Property.parcel_id_normalized) and keep the source
+# format in parcel_id_original. Both spellings below denote the same parcel.
+RAW_PARCEL_ID = "12 34 56 7890 01 001"
+NORMALIZED_PARCEL_ID = "123456789001001"
 
 
 @pytest.fixture
 def sample_tax_sale_property():
-    """Create a sample TaxSaleProperty for testing."""
+    """Create a sample TaxSaleProperty for testing.
+
+    The tax sale feed carries no address fields, so none are set here.
+    """
     return TaxSaleProperty(
-        parcel_id="12 34 56 7890 01 001",
+        parcel_id=RAW_PARCEL_ID,
         tda_number="2024-001",
-        situs_address="123 MAIN ST",
-        city="ORLANDO",
-        state="FL",
-        zip_code="32801",
         sale_date="2024-03-15",
         deed_status="Not Issued",
         latitude=28.5383,
@@ -54,12 +41,8 @@ def sample_tax_sale_property():
 def sample_enriched_property():
     """Create a sample EnrichedProperty for testing."""
     return EnrichedProperty(
-        parcel_id="12 34 56 7890 01 001",
+        parcel_id=RAW_PARCEL_ID,
         tda_number="2024-001",
-        situs_address="123 Main St",
-        city="Orlando",
-        state="FL",
-        zip_code="32801",
         latitude=28.5383,
         longitude=-81.3792,
         nearby_violations=0,
@@ -89,12 +72,15 @@ class TestPropertyLoader:
 
         property_data = loader.load_from_tax_sale(test_db, sample_tax_sale_property)
 
-        assert property_data["parcel_id_normalized"] == "12-34-56-7890-01-001"
-        assert property_data["parcel_id_original"] == "12 34 56 7890 01 001"
-        assert "Main St" in property_data["situs_address"]  # Standardized
-        assert property_data["city"] == "Orlando"  # Capitalized
+        assert property_data["parcel_id_normalized"] == NORMALIZED_PARCEL_ID
+        assert property_data["parcel_id_original"] == RAW_PARCEL_ID
         assert property_data["latitude"] == 28.5383
         assert property_data["longitude"] == -81.3792
+
+        # Address columns are owned by enrichment, so a tax sale load must not
+        # write them - otherwise reloading a parcel wipes its enriched address.
+        assert "situs_address" not in property_data
+        assert "city" not in property_data
 
     def test_load_from_enriched(self, test_db, sample_enriched_property):
         """Test converting EnrichedProperty to Property model data."""
@@ -102,10 +88,10 @@ class TestPropertyLoader:
 
         property_data = loader.load_from_enriched(test_db, sample_enriched_property)
 
-        assert property_data["parcel_id_normalized"] == "12-34-56-7890-01-001"
-        assert property_data["situs_address"] == "123 Main St"
-        assert property_data["city"] == "Orlando"
+        assert property_data["parcel_id_normalized"] == NORMALIZED_PARCEL_ID
+        assert property_data["parcel_id_original"] == RAW_PARCEL_ID
         assert property_data["latitude"] == 28.5383
+        assert property_data["longitude"] == -81.3792
 
     def test_bulk_load(self, test_db):
         """Test bulk loading multiple TaxSaleProperty records."""
@@ -115,9 +101,7 @@ class TestPropertyLoader:
         tax_sales = [
             TaxSaleProperty(
                 parcel_id=f"12 34 56 7890 01 00{i}",
-                situs_address=f"{i*100} Main St",
-                city="Orlando",
-                state="FL",
+                tda_number=f"2024-00{i}",
             )
             for i in range(1, 4)
         ]
@@ -139,7 +123,7 @@ class TestTaxSaleLoader:
 
         tax_sale_data = loader.load(test_db, sample_tax_sale_property)
 
-        assert tax_sale_data["parcel_id_normalized"] == "12-34-56-7890-01-001"
+        assert tax_sale_data["parcel_id_normalized"] == NORMALIZED_PARCEL_ID
         assert tax_sale_data["tda_number"] == "2024-001"
         assert tax_sale_data["sale_date"] == date(2024, 3, 15)
         assert tax_sale_data["deed_status"] == "Not Issued"
@@ -147,10 +131,10 @@ class TestTaxSaleLoader:
         # Verify parent property was created
         from src.wholesaler.db.repository import PropertyRepository
         property_repo = PropertyRepository()
-        property_obj = property_repo.get_by_parcel(test_db, "12-34-56-7890-01-001")
+        property_obj = property_repo.get_by_parcel(test_db, NORMALIZED_PARCEL_ID)
 
         assert property_obj is not None
-        assert property_obj.parcel_id_normalized == "12-34-56-7890-01-001"
+        assert property_obj.parcel_id_normalized == NORMALIZED_PARCEL_ID
 
     def test_load_preserves_raw_data(self, test_db, sample_tax_sale_property):
         """Test that raw API data is preserved in JSONB."""
@@ -160,7 +144,7 @@ class TestTaxSaleLoader:
 
         assert "raw_data" in tax_sale_data
         assert isinstance(tax_sale_data["raw_data"], dict)
-        assert tax_sale_data["raw_data"]["parcel_id"] == "12 34 56 7890 01 001"
+        assert tax_sale_data["raw_data"]["parcel_id"] == RAW_PARCEL_ID
 
     def test_bulk_load(self, test_db):
         """Test bulk loading multiple tax sale records."""
@@ -170,8 +154,6 @@ class TestTaxSaleLoader:
             TaxSaleProperty(
                 parcel_id=f"12 34 56 7890 01 00{i}",
                 tda_number=f"2024-00{i}",
-                situs_address=f"{i*100} Main St",
-                city="Orlando",
                 sale_date="2024-03-15",
             )
             for i in range(1, 4)
@@ -189,9 +171,8 @@ class TestTaxSaleLoader:
 
         tax_sales = [
             TaxSaleProperty(
-                parcel_id="12 34 56 7890 01 001",
+                parcel_id=RAW_PARCEL_ID,
                 tda_number="2024-001",
-                situs_address="123 Main St",
                 sale_date="2024-03-15",
             )
         ]
@@ -218,9 +199,9 @@ class TestLeadScoreLoader:
         """Test converting LeadScore dataclass to database model data."""
         loader = LeadScoreLoader()
 
-        lead_score_data = loader.load(test_db, "12-34-56-7890-01-001", sample_lead_score)
+        lead_score_data = loader.load(test_db, RAW_PARCEL_ID, sample_lead_score)
 
-        assert lead_score_data["parcel_id_normalized"] == "12-34-56-7890-01-001"
+        assert lead_score_data["parcel_id_normalized"] == NORMALIZED_PARCEL_ID
         assert lead_score_data["distress_score"] == 25.0
         assert lead_score_data["value_score"] == 20.0
         assert lead_score_data["location_score"] == 15.0
@@ -233,12 +214,12 @@ class TestLeadScoreLoader:
         """Test that loading lead score creates parent property first."""
         loader = LeadScoreLoader()
 
-        loader.load(test_db, "12-34-56-7890-01-001", sample_lead_score)
+        loader.load(test_db, RAW_PARCEL_ID, sample_lead_score)
 
         # Verify parent property was created
         from src.wholesaler.db.repository import PropertyRepository
         property_repo = PropertyRepository()
-        property_obj = property_repo.get_by_parcel(test_db, "12-34-56-7890-01-001")
+        property_obj = property_repo.get_by_parcel(test_db, NORMALIZED_PARCEL_ID)
 
         assert property_obj is not None
 
@@ -251,8 +232,6 @@ class TestLeadScoreLoader:
         for i in range(1, 4):
             enriched_prop = EnrichedProperty(
                 parcel_id=f"12 34 56 7890 01 00{i}",
-                situs_address=f"{i*100} Main St",
-                city="Orlando",
             )
             lead_score = LeadScoreDataclass(
                 distress_score=25.0,
@@ -280,9 +259,7 @@ class TestLeadScoreLoader:
 
         # Create lead score
         enriched_prop = EnrichedProperty(
-            parcel_id="12 34 56 7890 01 001",
-            situs_address="123 Main St",
-            city="Orlando",
+            parcel_id=RAW_PARCEL_ID,
         )
         lead_score = LeadScoreDataclass(
             distress_score=25.0,
@@ -297,7 +274,7 @@ class TestLeadScoreLoader:
         # Bulk load with history
         stats = loader.bulk_load(
             test_db,
-            [({"parcel_id_normalized": "12-34-56-7890-01-001"}, lead_score)],
+            [({"parcel_id_normalized": NORMALIZED_PARCEL_ID}, lead_score)],
             create_history=True,
             track_run=False
         )
