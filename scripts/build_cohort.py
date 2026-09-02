@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.wholesaler.feasibility.reconstruct import reconstruct_cohort  # noqa: E402
+from src.wholesaler.feasibility.reconstruct import EVENT_TYPES, reconstruct_cohort  # noqa: E402
 from src.wholesaler.feasibility.sources import (  # noqa: E402
     load_events,
     load_valuations,
@@ -51,7 +51,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--event-type", action="append", default=[],
-        choices=["tax_sale", "foreclosure", "code_violation"],
+        choices=list(EVENT_TYPES),
         help="Type for the corresponding --events file, in the same order.",
     )
     parser.add_argument("--violations", type=Path, help="Code enforcement history")

@@ -39,10 +39,22 @@ from src.wholesaler.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Residential distress events.
 TAX_SALE = "tax_sale"
 FORECLOSURE = "foreclosure"
 CODE_VIOLATION = "code_violation"
-EVENT_TYPES = (TAX_SALE, FORECLOSURE, CODE_VIOLATION)
+RESIDENTIAL_EVENT_TYPES = (TAX_SALE, FORECLOSURE, CODE_VIOLATION)
+
+# Dental office events. These are not distress at all: they are the dated
+# moments when a dentist-owned building plausibly comes into play - a licence
+# reaching retirement age, a mortgage approaching its balloon, a practice
+# changing hands.
+LICENSE_MILESTONE = "license_milestone"
+LOAN_MATURITY = "loan_maturity"
+PRACTICE_SALE = "practice_sale"
+DENTAL_EVENT_TYPES = (LICENSE_MILESTONE, LOAN_MATURITY, PRACTICE_SALE)
+
+EVENT_TYPES = RESIDENTIAL_EVENT_TYPES + DENTAL_EVENT_TYPES
 
 
 @dataclass(frozen=True)
